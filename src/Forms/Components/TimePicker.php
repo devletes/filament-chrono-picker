@@ -1,18 +1,19 @@
 <?php
 
-namespace Devletes\TimePicker\Forms\Components;
+namespace Devletes\ChronoPicker\Forms\Components;
 
-use Devletes\TimePicker\Concerns\InteractsWithClock;
+use Devletes\ChronoPicker\Concerns\InteractsWithChronoPanel;
 use Filament\Forms\Components\TimePicker as BaseTimePicker;
 
+/** A clock face: hour and minute dials, drag or type. */
 class TimePicker extends BaseTimePicker
 {
-    use InteractsWithClock;
+    use InteractsWithChronoPanel;
 
     protected function setUp(): void
     {
         parent::setUp();
 
-        $this->setUpClock();
+        $this->setUpChronoPicker();
     }
 }

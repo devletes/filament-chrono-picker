@@ -1,9 +1,9 @@
 <?php
 
-namespace Devletes\TimePicker\Tests\Unit;
+namespace Devletes\ChronoPicker\Tests\Unit;
 
-use Devletes\TimePicker\Forms\Components\TimePicker;
-use Devletes\TimePicker\Tests\TestCase;
+use Devletes\ChronoPicker\Forms\Components\TimePicker;
+use Devletes\ChronoPicker\Tests\TestCase;
 
 class ClockFaceTest extends TestCase
 {

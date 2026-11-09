@@ -1,18 +1,19 @@
 <?php
 
-namespace Devletes\TimePicker\Forms\Components;
+namespace Devletes\ChronoPicker\Forms\Components;
 
-use Devletes\TimePicker\Concerns\InteractsWithClock;
+use Devletes\ChronoPicker\Concerns\InteractsWithChronoPanel;
 use Filament\Forms\Components\DateTimePicker as BaseDateTimePicker;
 
+/** A calendar that moves on to the clock once a day is picked. */
 class DateTimePicker extends BaseDateTimePicker
 {
-    use InteractsWithClock;
+    use InteractsWithChronoPanel;
 
     protected function setUp(): void
     {
         parent::setUp();
 
-        $this->setUpClock();
+        $this->setUpChronoPicker();
     }
 }

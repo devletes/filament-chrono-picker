@@ -1,9 +1,9 @@
 <?php
 
-namespace Devletes\TimePicker\Tests\Feature;
+namespace Devletes\ChronoPicker\Tests\Feature;
 
-use Devletes\TimePicker\Tests\Fixtures\PickerComponent;
-use Devletes\TimePicker\Tests\TestCase;
+use Devletes\ChronoPicker\Tests\Fixtures\PickerComponent;
+use Devletes\ChronoPicker\Tests\TestCase;
 use Livewire\Livewire;
 
 class BoundsTest extends TestCase

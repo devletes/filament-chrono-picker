@@ -1,6 +1,6 @@
 {
-    "name": "devletes/filament-time-picker",
-    "description": "A clock-face time and date-time picker for Filament — hour and minute dials, drag or type, natively in Livewire and Alpine. No jQuery, no date library, no build step.",
+    "name": "devletes/filament-chrono-picker",
+    "description": "Chrono Picker: time, date, date-time, month, year and range pickers for Filament, with a clock face, month and year grids, and one look with Filament's own. No date library, no build step.",
     "type": "library",
     "license": "MIT",
     "keywords": [
@@ -10,10 +10,12 @@
         "livewire",
         "alpine",
         "time-picker",
-        "timepicker",
+        "date-picker",
         "date-time-picker",
+        "month-picker",
+        "year-picker",
+        "date-range-picker",
         "clock",
-        "clock-picker",
         "dial",
         "form-component"
     ],
@@ -34,12 +36,15 @@
     },
     "autoload": {
         "psr-4": {
-            "Devletes\\TimePicker\\": "src/"
-        }
+            "Devletes\\ChronoPicker\\": "src/"
+        },
+        "files": [
+            "legacy/aliases.php"
+        ]
     },
     "autoload-dev": {
         "psr-4": {
-            "Devletes\\TimePicker\\Tests\\": "tests/",
+            "Devletes\\ChronoPicker\\Tests\\": "tests/",
             "Workbench\\App\\": "workbench/app/",
             "Workbench\\Database\\Seeders\\": "workbench/database/seeders/"
         }
@@ -65,7 +70,7 @@
     "extra": {
         "laravel": {
             "providers": [
-                "Devletes\\TimePicker\\TimePickerServiceProvider"
+                "Devletes\\ChronoPicker\\ChronoPickerServiceProvider"
             ]
         }
     },
@@ -74,9 +79,9 @@
     },
     "minimum-stability": "stable",
     "prefer-stable": true,
-    "homepage": "https://github.com/devletes/filament-time-picker",
+    "homepage": "https://github.com/devletes/filament-chrono-picker",
     "support": {
-        "issues": "https://github.com/devletes/filament-time-picker/issues",
-        "source": "https://github.com/devletes/filament-time-picker"
+        "issues": "https://github.com/devletes/filament-chrono-picker/issues",
+        "source": "https://github.com/devletes/filament-chrono-picker"
     }
 }

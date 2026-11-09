@@ -1,12 +1,12 @@
 <?php
 
-namespace Devletes\TimePicker\Tests\Feature;
+namespace Devletes\ChronoPicker\Tests\Feature;
 
-use Devletes\TimePicker\Forms\Components\DateTimePicker;
-use Devletes\TimePicker\Forms\Components\TimePicker;
-use Devletes\TimePicker\Tests\Fixtures\DateTimePickerComponent;
-use Devletes\TimePicker\Tests\Fixtures\PickerComponent;
-use Devletes\TimePicker\Tests\TestCase;
+use Devletes\ChronoPicker\Forms\Components\DateTimePicker;
+use Devletes\ChronoPicker\Forms\Components\TimePicker;
+use Devletes\ChronoPicker\Tests\Fixtures\DateTimePickerComponent;
+use Devletes\ChronoPicker\Tests\Fixtures\PickerComponent;
+use Devletes\ChronoPicker\Tests\TestCase;
 use Filament\Schemas\Schema;
 use Illuminate\Support\Carbon;
 use Livewire\Livewire;
@@ -17,19 +17,19 @@ class DateTimePickerTest extends TestCase
     {
         Livewire::test(DateTimePickerComponent::class, ['startsAt' => '2026-11-03 09:30:00'])
             ->assertSee('Starts at')
-            ->assertSee('devletesTimePicker', escape: false)
-            ->assertSee('fi-dtp-calendar-days', escape: false)
-            ->assertSee('fi-dtp-face', escape: false)
-            ->assertSee('fi-dtp-views', escape: false);
+            ->assertSee('devletesChronoPicker', escape: false)
+            ->assertSee('fi-chrono-calendar-days', escape: false)
+            ->assertSee('fi-chrono-face', escape: false)
+            ->assertSee('fi-chrono-views', escape: false);
     }
 
     public function test_a_time_picker_has_no_calendar(): void
     {
         Livewire::test(PickerComponent::class, ['time' => '09:30'])
-            ->assertDontSee('fi-dtp-calendar-days', escape: false)
-            ->assertDontSee('fi-dtp-views', escape: false);
+            ->assertDontSee('fi-chrono-calendar-days', escape: false)
+            ->assertDontSee('fi-chrono-views', escape: false);
 
-        $this->assertFalse($this->picker()->getClockConfig()['hasDate']);
+        $this->assertFalse($this->picker()->getPickerConfig()['hasDate']);
     }
 
     public function test_it_keeps_the_state_it_was_given(): void
@@ -57,7 +57,7 @@ class DateTimePickerTest extends TestCase
 
     public function test_the_config_describes_a_date_and_a_time(): void
     {
-        $config = $this->dateTimePicker()->seconds(false)->getClockConfig();
+        $config = $this->dateTimePicker()->seconds(false)->getPickerConfig();
 
         $this->assertTrue($config['hasDate']);
         $this->assertTrue($config['hasTime']);
@@ -69,7 +69,7 @@ class DateTimePickerTest extends TestCase
 
     public function test_a_twelve_hour_display_gets_a_twelve_hour_dial(): void
     {
-        $config = $this->dateTimePicker()->seconds(false)->displayFormat('M j, Y g:i A')->getClockConfig();
+        $config = $this->dateTimePicker()->seconds(false)->displayFormat('M j, Y g:i A')->getPickerConfig();
 
         $this->assertSame(12, $config['hoursCycle']);
         $this->assertSame('g:i A', $config['timeDisplayFormat']);
@@ -77,7 +77,7 @@ class DateTimePickerTest extends TestCase
 
     public function test_without_time_it_is_a_calendar_only(): void
     {
-        $config = $this->dateTimePicker()->time(false)->getClockConfig();
+        $config = $this->dateTimePicker()->time(false)->getPickerConfig();
 
         $this->assertTrue($config['hasDate']);
         $this->assertFalse($config['hasTime']);
@@ -90,7 +90,7 @@ class DateTimePickerTest extends TestCase
             ->minDate('2026-11-01 08:00')
             ->maxDate(Carbon::parse('2026-11-30 18:00'))
             ->disabledDates(['2026-11-11', Carbon::parse('2026-11-25')])
-            ->getClockConfig();
+            ->getPickerConfig();
 
         $this->assertSame('2026-11-01 08:00:00', $config['minDate']);
         $this->assertSame('2026-11-30 18:00:00', $config['maxDate']);
@@ -99,8 +99,8 @@ class DateTimePickerTest extends TestCase
 
     public function test_the_week_starts_where_filament_says(): void
     {
-        $this->assertSame(1, $this->dateTimePicker()->getClockConfig()['firstDayOfWeek']);
-        $this->assertSame(0, $this->dateTimePicker()->weekStartsOnSunday()->getClockConfig()['firstDayOfWeek']);
+        $this->assertSame(1, $this->dateTimePicker()->getPickerConfig()['firstDayOfWeek']);
+        $this->assertSame(0, $this->dateTimePicker()->weekStartsOnSunday()->getPickerConfig()['firstDayOfWeek']);
     }
 
     public function test_a_date_before_the_minimum_is_rejected(): void

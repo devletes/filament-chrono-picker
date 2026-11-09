@@ -3,8 +3,17 @@
 namespace Workbench\App\Filament\Pages;
 
 use BackedEnum;
-use Devletes\TimePicker\Forms\Components\DateTimePicker;
-use Devletes\TimePicker\Forms\Components\TimePicker;
+use Devletes\ChronoPicker\Forms\Components\DatePicker;
+use Devletes\ChronoPicker\Forms\Components\DateRangePicker;
+use Devletes\ChronoPicker\Forms\Components\DateTimePicker;
+use Devletes\ChronoPicker\Forms\Components\MonthPicker;
+use Devletes\ChronoPicker\Forms\Components\MonthRangePicker;
+use Devletes\ChronoPicker\Forms\Components\TimePicker;
+use Devletes\ChronoPicker\Forms\Components\TimeRangePicker;
+use Devletes\ChronoPicker\Forms\Components\YearPicker;
+use Devletes\ChronoPicker\Forms\Components\YearRangePicker;
+use Filament\Actions\Action;
+use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Schemas\Components\EmbeddedSchema;
 use Filament\Schemas\Components\Grid;
@@ -14,7 +23,11 @@ use Filament\Schemas\Contracts\HasSchemas;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 
-/** One section per picker variant; the screenshot script finds each by its data-demo attribute. */
+/**
+ * Every component of the package on one delivery-planning form, one section per variant. The screenshot script
+ * finds each section by its data-demo attribute. Ranges are plain Livewire state here: the two-column ones read and
+ * write `*_starts_on` / `*_ends_on` style keys beside them, the JSON one a `from` / `to` array.
+ */
 class Showcase extends Page implements HasSchemas
 {
     use InteractsWithSchemas;
@@ -39,12 +52,43 @@ class Showcase extends Page implements HasSchemas
             'ships_at' => now()->addDays(2)->setTime(10, 0)->format('Y-m-d H:i:s'),
             'loading_time' => '08:45:30',
             'call_back_at' => '16:00',
+            'delivered_on' => now()->addWeek()->toDateString(),
+            'billing_month' => now()->format('Y-m'),
+            'fiscal_year' => now()->year,
+            'window_starts_on' => now()->addDays(3)->toDateString(),
+            'window_ends_on' => now()->addDays(9)->toDateString(),
+            'closure' => ['from' => now()->setDate(now()->year, 12, 24)->toDateString(), 'to' => now()->setDate(now()->year + 1, 1, 2)->toDateString()],
+            'contract_starts' => now()->startOfYear()->format('Y-m'),
+            'contract_ends' => now()->startOfYear()->addMonths(5)->format('Y-m'),
+            'service_from' => 2018,
+            'service_to' => now()->year,
+            'shift_starts' => '07:30',
+            'shift_ends' => '16:00',
         ]);
     }
 
     public function content(Schema $schema): Schema
     {
         return $schema->components([EmbeddedSchema::make('form')]);
+    }
+
+    /**
+     * @return array<Action>
+     */
+    protected function getHeaderActions(): array
+    {
+        return [
+            Action::make('save')
+                ->action(function (): void {
+                    $state = $this->form->getState();
+
+                    Notification::make()
+                        ->title('Saved')
+                        ->body(json_encode(collect($state)->except(['deliver_at', 'cutoff', 'pickup', 'loading_time', 'call_back_at'])->all()))
+                        ->success()
+                        ->send();
+                }),
+        ];
     }
 
     public function form(Schema $schema): Schema
@@ -82,18 +126,6 @@ class Showcase extends Page implements HasSchemas
                                 ->helperText('Open 9 AM to 5 PM'),
                         ]),
 
-                    Section::make('Dispatch')
-                        ->extraAttributes(['data-demo' => 'date-time'])
-                        ->schema([
-                            DateTimePicker::make('ships_at')
-                                ->label('Ships at')
-                                ->seconds(false)
-                                ->displayFormat('M j, Y g:i A')
-                                ->minDate(now()->startOfDay())
-                                ->minTime('08:00')
-                                ->maxTime('20:00'),
-                        ]),
-
                     Section::make('Courier call-back')
                         ->extraAttributes(['data-demo' => 'close-on-complete'])
                         ->schema([
@@ -112,6 +144,97 @@ class Showcase extends Page implements HasSchemas
                                 ->label('Truck loaded at')
                                 ->seconds()
                                 ->displayFormat('H:i:s'),
+                        ]),
+
+                    Section::make('Dispatch')
+                        ->extraAttributes(['data-demo' => 'date-time'])
+                        ->schema([
+                            DateTimePicker::make('ships_at')
+                                ->label('Ships at')
+                                ->seconds(false)
+                                ->displayFormat('M j, Y g:i A')
+                                ->minDate(now()->startOfDay())
+                                ->minTime('08:00')
+                                ->maxTime('20:00'),
+                        ]),
+
+                    Section::make('Delivery date')
+                        ->extraAttributes(['data-demo' => 'date'])
+                        ->schema([
+                            DatePicker::make('delivered_on')
+                                ->label('Deliver on')
+                                ->minDate(now()->startOfDay())
+                                ->maxDate(now()->addYears(2)->endOfYear())
+                                ->helperText('Click the month or the year for a grid'),
+                        ]),
+
+                    Section::make('Invoicing')
+                        ->extraAttributes(['data-demo' => 'month'])
+                        ->schema([
+                            MonthPicker::make('billing_month')
+                                ->label('Bill with the month of')
+                                ->maxDate(now()->addMonths(6))
+                                ->helperText('Stored as Y-m'),
+                        ]),
+
+                    Section::make('Reporting')
+                        ->extraAttributes(['data-demo' => 'year'])
+                        ->schema([
+                            YearPicker::make('fiscal_year')
+                                ->label('Fiscal year')
+                                ->minDate(2015)
+                                ->maxDate(now()->addYear())
+                                ->helperText('Stored as Y'),
+                        ]),
+
+                    Section::make('Delivery window')
+                        ->extraAttributes(['data-demo' => 'date-range'])
+                        ->schema([
+                            DateRangePicker::make('window')
+                                ->label('Deliver between')
+                                ->storeIn(start: 'window_starts_on', end: 'window_ends_on')
+                                ->minDate(now()->startOfDay())
+                                ->helperText('Side by side, stored in two columns'),
+                        ]),
+
+                    Section::make('Holiday closure')
+                        ->extraAttributes(['data-demo' => 'date-range-one-at-a-time'])
+                        ->schema([
+                            DateRangePicker::make('closure')
+                                ->label('Depot closed')
+                                ->storeAsJson(start: 'from', end: 'to')
+                                ->oneAtATime()
+                                ->helperText('One at a time, stored as JSON'),
+                        ]),
+
+                    Section::make('Contract term')
+                        ->extraAttributes(['data-demo' => 'month-range'])
+                        ->schema([
+                            MonthRangePicker::make('contract')
+                                ->label('Courier contract')
+                                ->storeIn(start: 'contract_starts', end: 'contract_ends'),
+                        ]),
+
+                    Section::make('Years of service')
+                        ->extraAttributes(['data-demo' => 'year-range'])
+                        ->schema([
+                            YearRangePicker::make('service')
+                                ->label('Served the route')
+                                ->storeIn(start: 'service_from', end: 'service_to')
+                                ->oneAtATime(),
+                        ]),
+
+                    Section::make('Driver shift')
+                        ->extraAttributes(['data-demo' => 'time-range'])
+                        ->columnSpanFull()
+                        ->schema([
+                            TimeRangePicker::make('shift')
+                                ->label('On the road')
+                                ->storeIn(start: 'shift_starts', end: 'shift_ends')
+                                ->seconds(false)
+                                ->displayFormat('g:i A')
+                                ->minTime('06:00')
+                                ->maxTime('22:00'),
                         ]),
                 ]),
             ])

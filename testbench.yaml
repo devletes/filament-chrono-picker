@@ -13,7 +13,7 @@ providers:
   - Filament\Tables\TablesServiceProvider
   - Filament\Widgets\WidgetsServiceProvider
   - Livewire\LivewireServiceProvider
-  - Devletes\TimePicker\TimePickerServiceProvider
+  - Devletes\ChronoPicker\ChronoPickerServiceProvider
   - Workbench\App\Providers\Filament\AdminPanelProvider
 
 seeders:

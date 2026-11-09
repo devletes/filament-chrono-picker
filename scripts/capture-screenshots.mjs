@@ -21,9 +21,23 @@ const targets = [
     { file: 'bounds', demo: 'bounds' },
     { file: 'seconds', demo: 'seconds', then: stage('second') },
     { file: 'date_time_calendar', demo: 'date-time' },
-    { file: 'date_time_clock', demo: 'date-time', then: (picker) => picker.locator('.fi-dtp-view').nth(1).click() },
+    { file: 'date_time_clock', demo: 'date-time', then: (picker) => picker.locator('.fi-chrono-view').nth(1).click() },
+    { file: 'date_calendar', demo: 'date' },
+    { file: 'date_months', demo: 'date', then: (picker) => picker.locator('[x-show="view === \'date\'"] [aria-label="Choose a month"]').click() },
+    { file: 'date_years', demo: 'date', then: (picker) => picker.locator('[x-show="view === \'date\'"] [aria-label="Choose a year"]').click() },
+    { file: 'month', demo: 'month' },
+    { file: 'month_years', demo: 'month', then: (picker) => picker.locator('[x-show="view === \'months\'"] [aria-label="Choose a year"]').click() },
+    { file: 'year', demo: 'year' },
+    { file: 'date_range', demo: 'date-range' },
+    { file: 'date_range_one_at_a_time', demo: 'date-range-one-at-a-time', open: 'end' },
+    { file: 'month_range', demo: 'month-range' },
+    { file: 'year_range', demo: 'year-range' },
+    { file: 'time_range', demo: 'time-range' },
     { file: 'layout', demo: 'twelve-hour', viewport: true },
 ];
+
+// `ONLY=date_months,date_years npm run screenshots` captures a subset.
+const only = (process.env.ONLY ?? '').split(',').filter(Boolean);
 
 const modes = ['light', 'dark'];
 const padding = 25;
@@ -36,7 +50,7 @@ async function main() {
 
     const browser = await browserWithSession();
 
-    for (const target of targets) {
+    for (const target of targets.filter((t) => only.length === 0 || only.includes(t.file))) {
         for (const mode of modes) {
             const page = await browser.newPage();
             await page.setViewportSize(target.viewport ? layoutViewport : viewport);
@@ -46,13 +60,23 @@ async function main() {
             await page.addInitScript(() => localStorage.setItem('theme', 'system'));
             await page.goto(`${baseUrl}${page_path}`);
             await page.waitForLoadState('networkidle');
-            await page.addStyleTag({ content: 'html { scrollbar-width: none; } ::-webkit-scrollbar { display: none; }' });
+            // The room below lets a section near the end of the page scroll to the top with its panel open under it.
+            await page.addStyleTag({ content: 'html { scrollbar-width: none; } ::-webkit-scrollbar { display: none; } body { padding-bottom: 900px; }' });
 
             const section = page.locator(`[data-demo="${target.demo}"]`);
-            const picker = section.locator('.fi-dtp');
+            const picker = section.locator('.fi-chrono').first();
 
-            await picker.locator('.fi-dtp-trigger').click();
-            await picker.locator('.fi-dtp-panel').waitFor({ state: 'visible' });
+            // Crops are in viewport coordinates, so the section is brought to the top with room below for its panel.
+            await section.evaluate((el) => { el.scrollIntoView({ block: 'start' }); window.scrollBy(0, -120) });
+
+            // A single picker opens from its field; a range from the half of its text naming the end to show.
+            if (await picker.locator('.fi-chrono-range-half').count()) {
+                await picker.locator('.fi-chrono-range-half').nth(target.open === 'end' ? 1 : 0).click();
+            } else {
+                await picker.locator('.fi-chrono-trigger').click();
+            }
+
+            await picker.locator('.fi-chrono-panel').waitFor({ state: 'visible' });
 
             if (target.then) {
                 await target.then(picker);
@@ -66,7 +90,7 @@ async function main() {
                 await page.screenshot({ path: outPath });
             } else {
                 const a = await section.boundingBox();
-                const b = await picker.locator('.fi-dtp-panel').boundingBox();
+                const b = await picker.locator('.fi-chrono-panel').boundingBox();
                 const x = Math.min(a.x, b.x) - padding;
                 const y = Math.min(a.y, b.y) - padding;
 

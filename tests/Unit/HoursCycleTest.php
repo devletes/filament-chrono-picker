@@ -1,9 +1,9 @@
 <?php
 
-namespace Devletes\TimePicker\Tests\Unit;
+namespace Devletes\ChronoPicker\Tests\Unit;
 
-use Devletes\TimePicker\Forms\Components\TimePicker;
-use Devletes\TimePicker\Tests\TestCase;
+use Devletes\ChronoPicker\Forms\Components\TimePicker;
+use Devletes\ChronoPicker\Tests\TestCase;
 
 class HoursCycleTest extends TestCase
 {
@@ -37,7 +37,7 @@ class HoursCycleTest extends TestCase
 
     public function test_the_config_sets_the_default_for_every_field(): void
     {
-        config()->set('time-picker.hours_cycle', 12);
+        config()->set('chrono-picker.hours_cycle', 12);
 
         $this->assertSame(12, TimePicker::make('t')->displayFormat('H:i')->getHoursCycle());
 
@@ -46,7 +46,7 @@ class HoursCycleTest extends TestCase
 
     public function test_a_nonsense_cycle_falls_back_to_the_format(): void
     {
-        config()->set('time-picker.hours_cycle', 13);
+        config()->set('chrono-picker.hours_cycle', 13);
 
         $this->assertSame(12, TimePicker::make('t')->displayFormat('g:i A')->getHoursCycle());
     }

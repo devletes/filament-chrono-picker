@@ -1,11 +1,12 @@
 <?php
 
-namespace Devletes\TimePicker\Concerns;
+namespace Devletes\ChronoPicker\Concerns;
 
 use Carbon\CarbonInterface;
 use Closure;
 use Illuminate\Support\Carbon;
 
+/** The dial: its hour cycle and the daily window it allows. */
 trait HasClockOptions
 {
     protected int|Closure|null $hoursCycle = null;
@@ -13,16 +14,6 @@ trait HasClockOptions
     protected CarbonInterface|string|Closure|null $minTime = null;
 
     protected CarbonInterface|string|Closure|null $maxTime = null;
-
-    protected string|Closure|null $okLabel = null;
-
-    protected string|Closure|null $cancelLabel = null;
-
-    protected string|Closure|null $nowLabel = null;
-
-    protected bool|Closure|null $hasNowButton = null;
-
-    protected bool|Closure|null $shouldCloseOnComplete = null;
 
     public function hoursCycle(int|Closure|null $cycle): static
     {
@@ -45,45 +36,10 @@ trait HasClockOptions
         return $this;
     }
 
-    public function okLabel(string|Closure|null $label): static
-    {
-        $this->okLabel = $label;
-
-        return $this;
-    }
-
-    public function cancelLabel(string|Closure|null $label): static
-    {
-        $this->cancelLabel = $label;
-
-        return $this;
-    }
-
-    public function nowLabel(string|Closure|null $label): static
-    {
-        $this->nowLabel = $label;
-
-        return $this;
-    }
-
-    public function nowButton(bool|Closure|null $condition = true): static
-    {
-        $this->hasNowButton = $condition;
-
-        return $this;
-    }
-
-    public function closeOnComplete(bool|Closure|null $condition = true): static
-    {
-        $this->shouldCloseOnComplete = $condition;
-
-        return $this;
-    }
-
     public function getHoursCycle(): int
     {
         $cycle = $this->evaluate($this->hoursCycle)
-            ?? config('time-picker.hours_cycle');
+            ?? config('chrono-picker.hours_cycle');
 
         if (in_array($cycle, [12, 24], strict: true)) {
             return $cycle;
@@ -101,31 +57,6 @@ trait HasClockOptions
     public function getMaxTime(): ?string
     {
         return $this->normaliseTime($this->evaluate($this->maxTime));
-    }
-
-    public function getOkLabel(): string
-    {
-        return $this->evaluate($this->okLabel) ?? __('devletes-time-picker::time-picker.ok');
-    }
-
-    public function getCancelLabel(): string
-    {
-        return $this->evaluate($this->cancelLabel) ?? __('devletes-time-picker::time-picker.cancel');
-    }
-
-    public function getNowLabel(): string
-    {
-        return $this->evaluate($this->nowLabel) ?? __('devletes-time-picker::time-picker.now');
-    }
-
-    public function hasNowButton(): bool
-    {
-        return (bool) ($this->evaluate($this->hasNowButton) ?? config('time-picker.now_button', true));
-    }
-
-    public function shouldCloseOnComplete(): bool
-    {
-        return (bool) ($this->evaluate($this->shouldCloseOnComplete) ?? config('time-picker.close_on_complete', false));
     }
 
     /** `g`/`h` are the 12-hour tokens; a backslash (chr 92) escapes the next character. */

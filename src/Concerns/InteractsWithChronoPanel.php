@@ -1,20 +1,30 @@
 <?php
 
-namespace Devletes\TimePicker\Concerns;
+namespace Devletes\ChronoPicker\Concerns;
 
 use Carbon\CarbonInterface;
 use Carbon\Exceptions\InvalidFormatException;
 use Closure;
+use Devletes\ChronoPicker\ChronoPickerServiceProvider;
+use Devletes\ChronoPicker\Enums\PickerMode;
+use Filament\Support\Facades\FilamentAsset;
 use Illuminate\Support\Carbon;
 use Throwable;
 
-trait InteractsWithClock
+/**
+ * The shared core: every single-value picker is a Filament date-time field with this panel in place of Filament's.
+ *
+ * A component is the trait, `setUpChronoPicker()` in its `setUp()`, and, where it picks something coarser than a
+ * day, a `getPickerMode()` of its own. State casts, storage formats, timezones, bounds and validation stay Filament's.
+ */
+trait InteractsWithChronoPanel
 {
     use HasClockOptions;
+    use HasPanelOptions;
 
-    protected function setUpClock(): void
+    protected function setUpChronoPicker(): void
     {
-        $this->view('devletes-time-picker::clock');
+        $this->view('devletes-chrono-picker::picker');
         $this->native(false);
 
         // The dial dims out-of-range numerals; the server enforces the bounds, since the panel is not the only way in.
@@ -31,20 +41,29 @@ trait InteractsWithClock
                     $max = $component->getMaxTime();
 
                     if (filled($min) && $time < $min) {
-                        $fail(__('devletes-time-picker::time-picker.validation.min', [
+                        $fail(__('devletes-chrono-picker::chrono-picker.validation.min', [
                             'time' => $component->formatForHumans($min),
                         ]));
                     }
 
                     if (filled($max) && $time > $max) {
-                        $fail(__('devletes-time-picker::time-picker.validation.max', [
+                        $fail(__('devletes-chrono-picker::chrono-picker.validation.max', [
                             'time' => $component->formatForHumans($max),
                         ]));
                     }
                 };
             },
-            static fn (self $component): bool => filled($component->getMinTime()) || filled($component->getMaxTime()),
+            static fn (self $component): bool => $component->hasTime() && (filled($component->getMinTime()) || filled($component->getMaxTime())),
         );
+    }
+
+    public function getPickerMode(): PickerMode
+    {
+        return match (true) {
+            ! $this->hasDate() => PickerMode::Time,
+            ! $this->hasTime() => PickerMode::Date,
+            default => PickerMode::DateTime,
+        };
     }
 
     /** No view sends rendering through Filament's embedded HTML, and with it the native input. */
@@ -90,29 +109,48 @@ trait InteractsWithClock
         return $this->getHoursCycle() === 12 ? "g:i{$seconds} A" : "H:i{$seconds}";
     }
 
+    public function getAlpineComponentSrc(): string
+    {
+        return FilamentAsset::getAlpineComponentSrc(ChronoPickerServiceProvider::ASSET, ChronoPickerServiceProvider::PACKAGE);
+    }
+
+    public function getStylesheetHref(): string
+    {
+        return FilamentAsset::getStyleHref(ChronoPickerServiceProvider::ASSET, ChronoPickerServiceProvider::PACKAGE);
+    }
+
     /**
+     * Everything the panel needs, handed to the Alpine component as one object.
+     *
      * @return array<string, mixed>
      */
-    public function getClockConfig(): array
+    public function getPickerConfig(): array
     {
+        $mode = $this->getPickerMode();
+        $hasTime = $mode->hasClock();
+        $hasDate = $mode !== PickerMode::Time;
+
         return [
+            'mode' => $mode->value,
+            'initialView' => $mode->initialView(),
             // Filament keeps a non-native picker's state as a whole datetime, even for a time-only field.
             'internalFormat' => $this->getInternalFormat(),
             'displayFormat' => $this->getDisplayFormat(),
             'timeDisplayFormat' => $this->getTimeDisplayFormat(),
-            'hasDate' => $this->hasDate(),
-            'hasTime' => $this->hasTime(),
+            'hasDate' => $hasDate,
+            'hasCalendar' => $mode->hasCalendar(),
+            'hasTime' => $hasTime,
             'hoursCycle' => $this->getHoursCycle(),
-            'hasSeconds' => $this->hasTime() && $this->hasSeconds(),
+            'hasSeconds' => $hasTime && $this->hasSeconds(),
             'hoursStep' => max(1, $this->getHoursStep()),
             'minutesStep' => max(1, $this->getMinutesStep()),
             'secondsStep' => max(1, $this->getSecondsStep()),
-            'minTime' => $this->getMinTime(),
-            'maxTime' => $this->getMaxTime(),
-            'minDate' => $this->hasDate() ? $this->normaliseDateTime($this->getMinDate()) : null,
-            'maxDate' => $this->hasDate() ? $this->normaliseDateTime($this->getMaxDate()) : null,
-            'disabledDates' => $this->hasDate() ? $this->getDisabledDatesAsStrings() : [],
-            'defaultFocusedDate' => $this->hasDate() ? $this->normaliseDateTime($this->getDefaultFocusedDate()) : null,
+            'minTime' => $hasTime ? $this->getMinTime() : null,
+            'maxTime' => $hasTime ? $this->getMaxTime() : null,
+            'minDate' => $hasDate ? $this->normaliseDateTime($this->getMinDate()) : null,
+            'maxDate' => $hasDate ? $this->normaliseDateTime($this->getMaxDate()) : null,
+            'disabledDates' => $mode->hasCalendar() ? $this->getDisabledDatesAsStrings() : [],
+            'defaultFocusedDate' => $hasDate ? $this->normaliseDateTime($this->getDefaultFocusedDate()) : null,
             'firstDayOfWeek' => $this->getFirstDayOfWeek() % 7,
             'closeOnDateSelection' => $this->shouldCloseOnDateSelection(),
             'closeOnComplete' => $this->shouldCloseOnComplete(),
@@ -120,25 +158,49 @@ trait InteractsWithClock
             'isReadOnly' => $this->isReadOnly(),
             'isAutofocused' => $this->isAutofocused(),
             'locale' => $this->getLocale(),
-            'labels' => [
-                'meridiem' => [
-                    'am' => __('devletes-time-picker::time-picker.meridiem.am'),
-                    'pm' => __('devletes-time-picker::time-picker.meridiem.pm'),
-                ],
-                'date' => __('devletes-time-picker::time-picker.date'),
-                'time' => __('devletes-time-picker::time-picker.time'),
-                'hour' => __('devletes-time-picker::time-picker.hour'),
-                'minute' => __('devletes-time-picker::time-picker.minute'),
-                'second' => __('devletes-time-picker::time-picker.second'),
-                'dial' => [
-                    'hour' => __('devletes-time-picker::time-picker.dial.hour'),
-                    'minute' => __('devletes-time-picker::time-picker.dial.minute'),
-                    'second' => __('devletes-time-picker::time-picker.dial.second'),
-                ],
-                'selectHour' => __('devletes-time-picker::time-picker.select_hour'),
-                'selectMinute' => __('devletes-time-picker::time-picker.select_minute'),
-                'selectSecond' => __('devletes-time-picker::time-picker.select_second'),
-            ],
+            'yearsPerPage' => 12,
+            'labels' => $this->getPanelLabels(),
+        ];
+    }
+
+    /**
+     * @deprecated Use getPickerConfig(); kept for time picker callers.
+     *
+     * @return array<string, mixed>
+     */
+    public function getClockConfig(): array
+    {
+        return $this->getPickerConfig();
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected function getPanelLabels(): array
+    {
+        $label = static fn (string $key): string => __("devletes-chrono-picker::chrono-picker.{$key}");
+
+        return [
+            'meridiem' => ['am' => $label('meridiem.am'), 'pm' => $label('meridiem.pm')],
+            'date' => $label('date'),
+            'time' => $label('time'),
+            'month' => $label('month'),
+            'year' => $label('year'),
+            'hour' => $label('hour'),
+            'minute' => $label('minute'),
+            'second' => $label('second'),
+            'dial' => ['hour' => $label('dial.hour'), 'minute' => $label('dial.minute'), 'second' => $label('dial.second')],
+            'selectHour' => $label('select_hour'),
+            'selectMinute' => $label('select_minute'),
+            'selectSecond' => $label('select_second'),
+            'selectMonth' => $label('select_month'),
+            'selectYear' => $label('select_year'),
+            'previousMonth' => $label('previous_month'),
+            'nextMonth' => $label('next_month'),
+            'previousYear' => $label('previous_year'),
+            'nextYear' => $label('next_year'),
+            'previousYears' => $label('previous_years'),
+            'nextYears' => $label('next_years'),
         ];
     }
 

@@ -1,10 +1,10 @@
 <?php
 
-namespace Devletes\TimePicker\Tests\Feature;
+namespace Devletes\ChronoPicker\Tests\Feature;
 
-use Devletes\TimePicker\Forms\Components\TimePicker;
-use Devletes\TimePicker\Tests\Fixtures\PickerComponent;
-use Devletes\TimePicker\Tests\TestCase;
+use Devletes\ChronoPicker\Forms\Components\TimePicker;
+use Devletes\ChronoPicker\Tests\Fixtures\PickerComponent;
+use Devletes\ChronoPicker\Tests\TestCase;
 use Livewire\Livewire;
 
 class TimePickerTest extends TestCase
@@ -13,13 +13,13 @@ class TimePickerTest extends TestCase
     {
         Livewire::test(PickerComponent::class, ['time' => '09:30'])
             ->assertSee('Clocked in at')
-            ->assertSee('devletesTimePicker', escape: false)
-            ->assertSee('fi-dtp-face', escape: false);
+            ->assertSee('devletesChronoPicker', escape: false)
+            ->assertSee('fi-chrono-face', escape: false);
     }
 
     public function test_it_writes_back_in_filaments_internal_format(): void
     {
-        $this->assertSame('Y-m-d H:i:s', $this->picker()->getClockConfig()['internalFormat']);
+        $this->assertSame('Y-m-d H:i:s', $this->picker()->getPickerConfig()['internalFormat']);
     }
 
     public function test_it_keeps_the_state_it_was_given(): void
@@ -51,8 +51,8 @@ class TimePickerTest extends TestCase
 
     public function test_seconds_add_a_third_dial(): void
     {
-        $withSeconds = $this->picker()->seconds()->getClockConfig();
-        $without = $this->picker()->seconds(false)->getClockConfig();
+        $withSeconds = $this->picker()->seconds()->getPickerConfig();
+        $without = $this->picker()->seconds(false)->getPickerConfig();
 
         $this->assertTrue($withSeconds['hasSeconds']);
         $this->assertFalse($without['hasSeconds']);
@@ -60,14 +60,14 @@ class TimePickerTest extends TestCase
 
     public function test_the_minute_step_reaches_the_panel(): void
     {
-        $config = $this->picker()->minutesStep(15)->getClockConfig();
+        $config = $this->picker()->minutesStep(15)->getPickerConfig();
 
         $this->assertSame(15, $config['minutesStep']);
     }
 
     public function test_a_step_of_zero_would_stall_the_dial_so_it_is_floored_at_one(): void
     {
-        $config = $this->picker()->minutesStep(0)->getClockConfig();
+        $config = $this->picker()->minutesStep(0)->getPickerConfig();
 
         $this->assertSame(1, $config['minutesStep']);
     }
@@ -83,12 +83,12 @@ class TimePickerTest extends TestCase
 
     public function test_the_dial_names_the_unit_it_is_setting(): void
     {
-        $labels = $this->picker()->getClockConfig()['labels']['dial'];
+        $labels = $this->picker()->getPickerConfig()['labels']['dial'];
 
         $this->assertSame(['hour' => 'hr', 'minute' => 'min', 'second' => 'sec'], $labels);
 
         Livewire::test(PickerComponent::class, ['time' => '09:30'])
-            ->assertSee('fi-dtp-dial-label', escape: false);
+            ->assertSee('fi-chrono-dial-label', escape: false);
     }
 
     public function test_the_now_button_can_be_turned_off(): void
@@ -96,7 +96,7 @@ class TimePickerTest extends TestCase
         $this->assertTrue(TimePicker::make('t')->hasNowButton());
         $this->assertFalse(TimePicker::make('t')->nowButton(false)->hasNowButton());
 
-        config()->set('time-picker.now_button', false);
+        config()->set('chrono-picker.now_button', false);
 
         $this->assertFalse(TimePicker::make('t')->hasNowButton());
         $this->assertTrue(TimePicker::make('t')->nowButton()->hasNowButton());

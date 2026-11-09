@@ -10,7 +10,7 @@
 
 Please report security vulnerabilities privately — do not open a public issue.
 
-- Use GitHub's [private vulnerability reporting](https://github.com/devletes/filament-time-picker/security/advisories/new)
+- Use GitHub's [private vulnerability reporting](https://github.com/devletes/filament-chrono-picker/security/advisories/new)
 - Or email [packages@devletes.com](mailto:packages@devletes.com)
 
 Please include:

@@ -1,12 +1,12 @@
 <?php
 
-namespace Devletes\TimePicker\Tests;
+namespace Devletes\ChronoPicker\Tests;
 
 use BladeUI\Heroicons\BladeHeroiconsServiceProvider;
 use BladeUI\Icons\BladeIconsServiceProvider;
-use Devletes\TimePicker\Forms\Components\TimePicker;
-use Devletes\TimePicker\Tests\Fixtures\PickerComponent;
-use Devletes\TimePicker\TimePickerServiceProvider;
+use Devletes\ChronoPicker\ChronoPickerServiceProvider;
+use Devletes\ChronoPicker\Forms\Components\TimePicker;
+use Devletes\ChronoPicker\Tests\Fixtures\PickerComponent;
 use Filament\Actions\ActionsServiceProvider;
 use Filament\FilamentServiceProvider;
 use Filament\Forms\FormsServiceProvider;
@@ -41,7 +41,7 @@ abstract class TestCase extends Orchestra
             FilamentServiceProvider::class,
             // Must follow Filament, which rebinds Livewire's DataStore with a plain bind().
             LivewireServiceProvider::class,
-            TimePickerServiceProvider::class,
+            ChronoPickerServiceProvider::class,
         ];
     }
 

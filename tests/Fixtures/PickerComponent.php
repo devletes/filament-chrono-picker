@@ -1,8 +1,8 @@
 <?php
 
-namespace Devletes\TimePicker\Tests\Fixtures;
+namespace Devletes\ChronoPicker\Tests\Fixtures;
 
-use Devletes\TimePicker\Forms\Components\TimePicker;
+use Devletes\ChronoPicker\Forms\Components\TimePicker;
 use Filament\Actions\Concerns\InteractsWithActions;
 use Filament\Actions\Contracts\HasActions;
 use Filament\Schemas\Concerns\InteractsWithSchemas;

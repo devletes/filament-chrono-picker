@@ -1,18 +1,28 @@
-# Filament Time Picker
+# Chrono Picker for Filament
 
-[![Latest Version on Packagist](https://img.shields.io/packagist/v/devletes/filament-time-picker.svg?style=flat-square)](https://packagist.org/packages/devletes/filament-time-picker)
-[![Total Downloads](https://img.shields.io/packagist/dt/devletes/filament-time-picker.svg?style=flat-square)](https://packagist.org/packages/devletes/filament-time-picker)
-[![License](https://img.shields.io/packagist/l/devletes/filament-time-picker.svg?style=flat-square)](https://packagist.org/packages/devletes/filament-time-picker)
-[![GitHub Stars](https://img.shields.io/github/stars/devletes/filament-time-picker?style=flat-square)](https://github.com/devletes/filament-time-picker/stargazers)
+[![Latest Version on Packagist](https://img.shields.io/packagist/v/devletes/filament-chrono-picker.svg?style=flat-square)](https://packagist.org/packages/devletes/filament-chrono-picker)
+[![Total Downloads](https://img.shields.io/packagist/dt/devletes/filament-chrono-picker.svg?style=flat-square)](https://packagist.org/packages/devletes/filament-chrono-picker)
+[![License](https://img.shields.io/packagist/l/devletes/filament-chrono-picker.svg?style=flat-square)](https://packagist.org/packages/devletes/filament-chrono-picker)
+[![GitHub Stars](https://img.shields.io/github/stars/devletes/filament-chrono-picker?style=flat-square)](https://github.com/devletes/filament-chrono-picker/stargazers)
 
-A clock face for Filament's time and date-time fields — hour and minute dials, drag or tap or type.
+Time, date, date-time, month, year and range pickers for Filament that look like Filament's own: a clock face with hour and minute dials, a calendar whose month and year open as grids, and ranges that store into the columns you name.
 
-- **Drop-in replacements.** `TimePicker` and `DateTimePicker` extend Filament's own, so swapping the import is the whole migration
+| Single value | Range |
+| --- | --- |
+| `TimePicker` | `TimeRangePicker` |
+| `DatePicker` | `DateRangePicker` |
+| `DateTimePicker` | |
+| `MonthPicker` | `MonthRangePicker` |
+| `YearPicker` | `YearRangePicker` |
+
+- **Drop-in replacements.** `TimePicker`, `DatePicker` and `DateTimePicker` extend Filament's own, so swapping the import is the whole migration; `MonthPicker` and `YearPicker` extend Filament's `DatePicker` too
+- **Ranges stored your way.** Two columns you name (`starts_on` / `ends_on`), or one JSON column with keys you name, never a guess
 - **No dependencies.** No jQuery, no date library, no build step — vanilla JavaScript on the Alpine you already have
+- **Loaded on request.** The script and stylesheet are fetched by the first field that needs them, so a page without one loads nothing
 - **The dial follows the field.** `g:i A` gets a 12-hour face with AM/PM, `H:i` gets a 24-hour face with an inner ring
 - **Every minute is reachable**, not every fifth, and the steps still coarsen it when you want that
 - **Bounds that hold.** `minTime()` / `maxTime()` dim the dial, clamp typing, and are re-checked on the server
-- **A calendar to match**, with min and max dates, disabled dates and your locale's month and weekday names
+- **A calendar to match**, with min and max dates, disabled dates and your locale's month and weekday names; click the month or the year for a grid of either
 - Themed off Filament's palette — follows your panel's colour, light and dark
 
 <table><tr>
@@ -28,7 +38,7 @@ A clock face for Filament's time and date-time fields — hour and minute dials,
 ## Installation
 
 ```bash
-composer require devletes/filament-time-picker
+composer require devletes/filament-chrono-picker
 ```
 
 Then publish Filament's assets so the stylesheet and script are served on your panels:
@@ -37,33 +47,65 @@ Then publish Filament's assets so the stylesheet and script are served on your p
 php artisan filament:assets
 ```
 
-The package registers its own stylesheet and script with Filament's asset manager — there is nothing to add to your custom Tailwind theme.
+The package registers its stylesheet and script with Filament's asset manager as **on-request** assets: neither is in the page's `<head>`, and the first picker on a page fetches both (Filament's `x-load` and `x-load-css`). There is nothing to add to your custom Tailwind theme. Run `filament:assets` again after every update of the package, as for any Filament plugin; the asset URLs are versioned by the published files' contents.
+
+## Moving from `devletes/filament-time-picker`
+
+Chrono Picker is the time picker grown into a full date and time suite, published under a new name. Swap the requirement:
+
+```bash
+composer remove devletes/filament-time-picker
+composer require devletes/filament-chrono-picker
+php artisan filament:assets
+```
+
+- The namespace is now `Devletes\ChronoPicker`. The old class names (`Devletes\TimePicker\Forms\Components\TimePicker` and friends) still resolve to the new classes, with a deprecation notice, until Chrono Picker 1.0.
+- The config file is `config/chrono-picker.php`. A published `config/time-picker.php` is still read until you rename it.
+- Views, translations and publish tags are `devletes-chrono-picker` (they were `devletes-time-picker`); re-publish anything you had published.
+- CSS classes and theme variables are `fi-chrono-*` / `--fi-chrono-*` (they were `fi-dtp-*`).
+- The Alpine component is `devletesChronoPicker`, loaded as a module on request rather than registered on every page.
+- `getClockConfig()` is now `getPickerConfig()`; the old name still answers.
+- The footer's shortcut reads "Today" on a date-only field (it read "Now").
 
 ## Quick start
 
 ```php
-use Devletes\TimePicker\Forms\Components\DateTimePicker;
-use Devletes\TimePicker\Forms\Components\TimePicker;
+use Devletes\ChronoPicker\Forms\Components\DatePicker;
+use Devletes\ChronoPicker\Forms\Components\DateTimePicker;
+use Devletes\ChronoPicker\Forms\Components\TimePicker;
 
 TimePicker::make('deliver_at')
     ->seconds(false)
     ->displayFormat('g:i A');
 
+DatePicker::make('delivered_on');
+
 DateTimePicker::make('ships_at')
     ->seconds(false)
     ->displayFormat('M j, Y g:i A');
+
+MonthPicker::make('billing_month');          // stored as 2026-11
+YearPicker::make('fiscal_year');             // stored as 2026
+
+DateRangePicker::make('window')
+    ->storeIn(start: 'starts_on', end: 'ends_on');
 ```
+
+(`MonthPicker`, `YearPicker` and the range classes live in the same `Devletes\ChronoPicker\Forms\Components` namespace.)
 
 ## A drop-in replacement
 
-Both components **extend** Filament's own, so swapping the import is the whole migration:
+Each component **extends** Filament's own, so swapping the import is the whole migration:
 
 ```diff
 -use Filament\Forms\Components\TimePicker;
-+use Devletes\TimePicker\Forms\Components\TimePicker;
++use Devletes\ChronoPicker\Forms\Components\TimePicker;
+
+-use Filament\Forms\Components\DatePicker;
++use Devletes\ChronoPicker\Forms\Components\DatePicker;
 
 -use Filament\Forms\Components\DateTimePicker;
-+use Devletes\TimePicker\Forms\Components\DateTimePicker;
++use Devletes\ChronoPicker\Forms\Components\DateTimePicker;
 ```
 
 Everything you already use still works and still means the same thing — `seconds()`, the steps, `format()`, `displayFormat()`, `timezone()`, `live()`, `disabled()`, the affixes and the validation. The state cast is Filament's own, so nothing about what is stored changes.
@@ -88,7 +130,7 @@ TimePicker::make('cutoff')->hoursCycle(24);               // say so yourself
 <td width="50%"><img src="docs/images/twenty_four_hour_dark.png" alt="The 24-hour face with its inner ring (dark)"></td>
 </tr></table>
 
-Set `time-picker.hours_cycle` in the config to make one face the rule everywhere.
+Set `chrono-picker.hours_cycle` in the config to make one face the rule everywhere.
 
 ## Minutes and seconds
 
@@ -168,11 +210,169 @@ DateTimePicker::make('ships_at')
     ->closeOnDateSelection();               // pick a day and close, without the clock
 ```
 
-Without a time, it is a calendar only:
+## Dates
+
+`DatePicker` is the calendar alone: Filament's `DatePicker`, stored as `Y-m-d` and shown as `M j, Y` unless you say otherwise. Every date option above applies. (`DateTimePicker::make(...)->time(false)` is the same field.)
 
 ```php
-DateTimePicker::make('delivered_on')->time(false);
+DatePicker::make('delivered_on')
+    ->minDate(now()->startOfDay())
+    ->maxDate(now()->addYears(2)->endOfYear());
 ```
+
+<table><tr>
+<td width="50%"><img src="docs/images/date_calendar_light.png" alt="The date picker (light)"></td>
+<td width="50%"><img src="docs/images/date_calendar_dark.png" alt="The date picker (dark)"></td>
+</tr></table>
+
+## Month and year grids
+
+Every calendar's header is the month and the year between two arrows. Click the **month** for a grid of the twelve months of that year, whose arrows step a year at a time. Click the **year** (on either view) for a grid of twelve years, whose arrows page through earlier and later dozens. Picking in a grid goes back to the view it was opened from, so a date three years away is three clicks. Months and years wholly outside `minDate()` / `maxDate()` are dimmed and refuse the pointer; the current month and year are marked in the accent colour.
+
+<table><tr>
+<td width="50%"><img src="docs/images/date_months_light.png" alt="The month grid (light)"></td>
+<td width="50%"><img src="docs/images/date_years_dark.png" alt="The year grid (dark)"></td>
+</tr></table>
+
+## Months and years
+
+`MonthPicker` picks a month of a year and `YearPicker` a year. Both are Filament's `DatePicker` underneath, so `required()`, `minDate()`, `maxDate()`, `format()`, `displayFormat()`, `default()`, `live()` and validation behave as they do there.
+
+| | Stored as | Shown as | Opens on |
+| --- | --- | --- | --- |
+| `MonthPicker` | `Y-m` (`2026-11`) | `M Y` (`Nov 2026`) | the twelve months of the year, under a year that opens the year grid |
+| `YearPicker` | `Y` (`2026`) | `Y` | a page of twelve years, with arrows to page |
+
+```php
+MonthPicker::make('billing_month')
+    ->maxDate(now()->addMonths(6));
+
+YearPicker::make('fiscal_year')
+    ->minDate(2015)
+    ->maxDate(now()->addYear());
+
+MonthPicker::make('period')->format('m/Y')->displayFormat('F Y');   // store and show as you like
+```
+
+Bounds are whole periods: `minDate('2026-03')` allows March onwards and `maxDate(2027)` allows all of 2027, on the server as in the panel. A bound may be a `Y-m` or `Y` string, an integer year, a `Carbon` instance or a closure. Reading a stored `2026-02` on the 31st of a month stays February (Filament's own cast would roll it into March), and a year stored as an integer column reads as well as a string.
+
+<table><tr>
+<td width="50%"><img src="docs/images/month_light.png" alt="The month picker (light)"></td>
+<td width="50%"><img src="docs/images/month_years_dark.png" alt="The month picker's year grid (dark)"></td>
+</tr></table>
+
+<table><tr>
+<td width="50%"><img src="docs/images/year_light.png" alt="The year picker (light)"></td>
+<td width="50%"><img src="docs/images/year_dark.png" alt="The year picker (dark)"></td>
+</tr></table>
+
+## Ranges
+
+`DateRangePicker`, `MonthRangePicker`, `YearRangePicker` and `TimeRangePicker` put both ends of a range in one field: "Jan 1, 2026 – Jan 20, 2026", "Jan 2026 – Jun 2026", "2018 – 2026", "7:30 AM – 4:00 PM". Each end is the matching single picker, so it reads, stores and is bounded exactly as that picker would be.
+
+### Where the range is stored
+
+You say where, every time; there is no default.
+
+**Two columns** (the common case): the field reads both ends from the attributes you name and writes both back. Its own name is only the field's, and is not saved.
+
+```php
+DateRangePicker::make('window')
+    ->storeIn(start: 'starts_on', end: 'ends_on');
+```
+
+On an Eloquent record, `starts_on` and `ends_on` are the record's columns; inside a `Repeater` (with or without `->relationship()`), each item's own; on a Livewire component with no model, the keys beside the field in its state. The form's state comes back as `['starts_on' => '2026-01-01', 'ends_on' => '2026-01-20']`.
+
+**One JSON column**: both ends in an array under the field's own name, with the keys you name. Give the model an `array` (or `json`) cast; a JSON string is read too.
+
+```php
+DateRangePicker::make('closure')
+    ->storeAsJson(start: 'from', end: 'to');   // ['from' => '2026-12-24', 'to' => '2027-01-02']
+```
+
+An empty range saves two nulls in columns, or `null` in JSON. A field that says neither throws a `LogicException` naming both methods as soon as it is filled or rendered.
+
+Each end is stored in its picker's format: `Y-m-d` for dates, `Y-m` for months, `Y` for years, `H:i` (or `H:i:s` with `seconds()`) for times. `format()` changes it for both ends.
+
+### Layout
+
+**Side by side** (the default): From on the left, To on the right, both open at once, with no band painted between them. Each panel's heading says what it holds.
+
+```php
+DateRangePicker::make('window')->storeIn(start: 'starts_on', end: 'ends_on');
+```
+
+<table><tr>
+<td width="50%"><img src="docs/images/date_range_light.png" alt="A date range side by side (light)"></td>
+<td width="50%"><img src="docs/images/date_range_dark.png" alt="A date range side by side (dark)"></td>
+</tr></table>
+
+**One at a time**: a From / To switch over a single panel. Picking From moves the panel on to To. Clicking the From or To half of the field's text opens that end.
+
+```php
+DateRangePicker::make('closure')
+    ->storeAsJson(start: 'from', end: 'to')
+    ->oneAtATime();               // or ->layout(RangeLayout::OneAtATime) / ->layout('one-at-a-time')
+```
+
+<table><tr>
+<td width="50%"><img src="docs/images/date_range_one_at_a_time_light.png" alt="A date range one at a time, on To (light)"></td>
+<td width="50%"><img src="docs/images/date_range_one_at_a_time_dark.png" alt="A date range one at a time, on To (dark)"></td>
+</tr></table>
+
+Either way, the To panel opens where From is and dims what comes before it; picking a From after the current To clears To so it is picked again; **OK** saves the pair, **Cancel** or a click outside leaves the field as it was, and **Clear** empties both ends. `closeOnComplete()` saves and closes as soon as To is picked.
+
+### Months, years and times
+
+```php
+MonthRangePicker::make('contract')
+    ->storeIn(start: 'contract_starts', end: 'contract_ends');      // 2026-01 / 2026-06
+
+YearRangePicker::make('service')
+    ->storeIn(start: 'service_from', end: 'service_to')
+    ->oneAtATime();                                                // 2018 / 2026
+
+TimeRangePicker::make('shift')
+    ->storeIn(start: 'shift_starts', end: 'shift_ends')
+    ->seconds(false)
+    ->displayFormat('g:i A')
+    ->minTime('06:00')
+    ->maxTime('22:00');                                            // 07:30 / 16:00
+```
+
+<table><tr>
+<td width="50%"><img src="docs/images/month_range_light.png" alt="A month range (light)"></td>
+<td width="50%"><img src="docs/images/year_range_dark.png" alt="A year range, one at a time (dark)"></td>
+</tr></table>
+
+<table><tr>
+<td width="50%"><img src="docs/images/time_range_light.png" alt="A time range on two clocks (light)"></td>
+<td width="50%"><img src="docs/images/time_range_dark.png" alt="A time range on two clocks (dark)"></td>
+</tr></table>
+
+A time range is within one day: the end may not be before the start, so a shift past midnight is two fields.
+
+### Validation
+
+On the server, whatever arrived:
+
+- both ends or neither (`required()` asks for both);
+- the end not before the start (the same moment is allowed);
+- `minDate()` / `maxDate()` (or `minTime()` / `maxTime()`) on each end, as whole periods for months and years.
+
+Messages name the end by its label: "To must not be before From." Rename the ends with `startLabel()` / `endLabel()`, which also relabel the panel.
+
+### Options
+
+The single pickers' options are passed on to both ends: `format()`, `displayFormat()`, `minDate()`, `maxDate()`, `minTime()`, `maxTime()`, `disabledDates()`, `defaultFocusedDate()`, `firstDayOfWeek()`, `weekStartsOnMonday()`, `weekStartsOnSunday()`, `timezone()`, `locale()`, `hoursCycle()`, `seconds()`, `hoursStep()`, `minutesStep()`, `secondsStep()`. Anything else a single picker offers, per end:
+
+```php
+DateRangePicker::make('window')
+    ->storeIn(start: 'starts_on', end: 'ends_on')
+    ->configureEndsUsing(fn (DatePicker $end, string $which) => $end->defaultFocusedDate(now()->addMonth()));
+```
+
+`rangeSeparator(' to ')` changes the dash between the two halves of the text.
 
 ## Typing and the keyboard
 
@@ -207,32 +407,32 @@ TimePicker::make('deliver_at')
 
 ## Configuration
 
-`config/time-picker.php` sets the defaults every field starts from:
+`config/chrono-picker.php` sets the defaults every field starts from:
 
 ```bash
-php artisan vendor:publish --tag=devletes-time-picker-config
+php artisan vendor:publish --tag=devletes-chrono-picker-config
 ```
 
 ```php
 return [
     'hours_cycle' => null,         // 12, 24, or null to read it off each field's display format
-    'close_on_complete' => false,  // save and close once the last dial is set
-    'now_button' => true,          // show the "Now" shortcut
+    'close_on_complete' => false,  // save and close once the last dial, day, month or year is picked
+    'now_button' => true,          // show the "Now" / "Today" shortcut
 ];
 ```
 
 ## Theming
 
-Every colour resolves through Filament's palette variables, so the picker follows your panel's primary colour and its light and dark themes without being told. To change it further, override the `--fi-dtp-*` variables in your theme stylesheet:
+Every colour resolves through Filament's palette variables, so the picker follows your panel's primary colour and its light and dark themes without being told. To change it further, override the `--fi-chrono-*` variables in your theme stylesheet:
 
 ```css
-html .fi-dtp {
-    --fi-dtp-accent: var(--success-600);
-    --fi-dtp-plate: var(--gray-50);
+html .fi-chrono {
+    --fi-chrono-accent: var(--success-600);
+    --fi-chrono-plate: var(--gray-50);
 }
 
-html.dark .fi-dtp {
-    --fi-dtp-accent: var(--success-400);
+html.dark .fi-chrono {
+    --fi-chrono-accent: var(--success-400);
 }
 ```
 
@@ -241,22 +441,22 @@ The variables are `surface`, `plate` (the dial), `border`, `text`, `muted`, `fad
 Or publish the views to change the markup:
 
 ```bash
-php artisan vendor:publish --tag=devletes-time-picker-views
+php artisan vendor:publish --tag=devletes-chrono-picker-views
 ```
 
 ## Translations
 
-Every user-facing string goes through `devletes-time-picker::time-picker.*`. Publish the language files to reword them or add a locale:
+Every user-facing string goes through `devletes-chrono-picker::chrono-picker.*`. Publish the language files to reword them or add a locale:
 
 ```bash
-php artisan vendor:publish --tag=devletes-time-picker-translations
+php artisan vendor:publish --tag=devletes-chrono-picker-translations
 ```
 
-Then edit or add files under `lang/vendor/devletes-time-picker/`.
+Then edit or add files under `lang/vendor/devletes-chrono-picker/`.
 
 ## API reference
 
-Everything Filament's `TimePicker` and `DateTimePicker` offer, plus:
+Everything Filament's `TimePicker`, `DatePicker` and `DateTimePicker` offer, plus:
 
 | Method | What it does |
 | --- | --- |
@@ -270,7 +470,20 @@ Everything Filament's `TimePicker` and `DateTimePicker` offer, plus:
 | `nowLabel($label)` | Relabels the "Now" shortcut |
 | `native()` | Hands rendering back to Filament for the browser's own control |
 
-On `DateTimePicker`, Filament's `minDate()`, `maxDate()`, `disabledDates()`, `firstDayOfWeek()`, `weekStartsOnMonday()`, `weekStartsOnSunday()`, `defaultFocusedDate()`, `closeOnDateSelection()`, `time()` and `seconds()` all apply to the calendar and the clock.
+On `DatePicker` and `DateTimePicker`, Filament's `minDate()`, `maxDate()`, `disabledDates()`, `firstDayOfWeek()`, `weekStartsOnMonday()`, `weekStartsOnSunday()`, `defaultFocusedDate()`, `closeOnDateSelection()`, `time()` and `seconds()` all apply to the calendar and the clock. On `MonthPicker` and `YearPicker`, `minDate()`, `maxDate()` and `defaultFocusedDate()` take whole periods.
+
+The range classes (`DateRangePicker`, `MonthRangePicker`, `YearRangePicker`, `TimeRangePicker`) are Filament fields of their own, with everything a field has (`label()`, `required()`, `disabled()`, `readOnly()`, `placeholder()`, `helperText()`, `live()`, `columnSpan()`...) and:
+
+| Method | What it does |
+| --- | --- |
+| `storeIn(start: 'a', end: 'b')` | Stores the ends in two attributes beside the field |
+| `storeAsJson(start: 'from', end: 'to')` | Stores the ends in one array under the field's name, with these keys |
+| `sideBySide()` / `oneAtATime()` / `layout($layout)` | How the two ends share the panel (`RangeLayout`) |
+| `startLabel($label)` / `endLabel($label)` | Names the ends (default From / To) in the panel and in messages |
+| `rangeSeparator($separator)` | The text between the two halves of the field (default ` – `) |
+| `configureEndsUsing(fn ($end, $which) => ...)` | Configures each end's single picker directly |
+| `closeOnComplete()`, `okLabel()`, `cancelLabel()` | As on the single pickers |
+| The single pickers' bounds, formats and steps | Passed on to both ends (see Ranges → Options) |
 
 ## Testing
 
@@ -279,7 +492,9 @@ composer install
 composer test
 ```
 
-The suite runs on Testbench with the real Filament stack, against PHP 8.2–8.4 on Laravel 12 and 13.
+The suite runs on Testbench with the real Filament stack, against PHP 8.2–8.4 on Laravel 12 and 13: every picker's stored shape and bounds, and the ranges on an Eloquent record, in a JSON column, inside a relationship repeater and on plain Livewire state.
+
+The workbench (`composer serve`, then `/admin/deliveries`) shows every component on one form. With it running, `npm run e2e` drives the ranges in a real browser and `npm run screenshots` regenerates the images in this README.
 
 ## Need something custom?
 
