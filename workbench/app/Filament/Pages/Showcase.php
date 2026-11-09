@@ -23,11 +23,7 @@ use Filament\Schemas\Contracts\HasSchemas;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 
-/**
- * Every component of the package on one delivery-planning form, one section per variant. The screenshot script
- * finds each section by its data-demo attribute. Ranges are plain Livewire state here: the two-column ones read and
- * write `*_starts_on` / `*_ends_on` style keys beside them, the JSON one a `from` / `to` array.
- */
+/** Every component on one form, each section tagged with data-demo for the screenshot script. */
 class Showcase extends Page implements HasSchemas
 {
     use InteractsWithSchemas;

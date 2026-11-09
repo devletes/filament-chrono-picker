@@ -3,25 +3,20 @@
 namespace Devletes\ChronoPicker\Forms\Components;
 
 use Carbon\CarbonInterface;
+use Carbon\Exceptions\InvalidFormatException;
 use Devletes\ChronoPicker\Concerns\InteractsWithChronoPanel;
 use Devletes\ChronoPicker\StateCasts\PeriodStateCast;
 use Filament\Forms\Components\DatePicker as BaseDatePicker;
 use Filament\Schemas\Components\StateCasts\Contracts\StateCast;
 use Filament\Schemas\Components\StateCasts\DateTimeStateCast;
 use Illuminate\Support\Carbon;
-use Throwable;
 
-/**
- * A picker of whole months or years: Filament's DatePicker storing `Y-m` or `Y`, with the panel opening on its grid.
- *
- * Bounds are periods too: `minDate('2026-03')` allows March onwards and `maxDate('2027')` allows all of 2027, so a
- * bound is widened to its period's first and last moment before Filament validates against it.
- */
+/** A whole month or year; bounds widen to their period, so `minDate('2026-03')` allows all of March. */
 abstract class PeriodPicker extends BaseDatePicker
 {
     use InteractsWithChronoPanel;
 
-    /** `month` or `year`, as Carbon's startOf()/endOf() name them. */
+    /** `month` or `year`, as Carbon's startOf() names them. */
     abstract protected function periodUnit(): string;
 
     abstract protected function defaultStorageFormat(): string;
@@ -84,7 +79,6 @@ abstract class PeriodPicker extends BaseDatePicker
         return ($isMaximum ? $date->endOf($unit) : $date->startOf($unit))->format('Y-m-d H:i:s');
     }
 
-    /** Reads `2026`, `2026-03`, the field's own format, or anything Carbon reads, as a period. */
     protected function parsePeriod(CarbonInterface|string|int|null $value): ?Carbon
     {
         if (blank($value)) {
@@ -103,7 +97,7 @@ abstract class PeriodPicker extends BaseDatePicker
 
         try {
             return Carbon::parse((string) $value);
-        } catch (Throwable) {
+        } catch (InvalidFormatException) {
             return null;
         }
     }

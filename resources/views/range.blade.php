@@ -11,17 +11,15 @@
     $face = $hasTime ? $getEndClockFace() : [];
     $placeholder = $getPlaceholder();
 
-    // The panels are built server-side, so they are rebuilt whenever their shape changes.
+    // The panels are rendered on the server, so a change of shape re-keys them.
     $shapeKey = substr(md5(serialize([$config, $ends, $isReadOnly])), 0, 16);
 @endphp
 
 <x-dynamic-component :component="$getFieldWrapperView()" :field="$field">
-    {{-- The stylesheet and the script both load on request, so a page without a picker fetches neither. --}}
     <div x-data="{}" x-load-css="[@js($getStylesheetHref())]" class="fi-chrono-assets">
         <div
             x-load
             x-load-src="{{ $getAlpineComponentSrc() }}"
-            data-chrono-range
             x-data="devletesChronoPicker({
                 config: @js($config),
                 state: $wire.{{ $applyStateBindingModifiers("\$entangle('{$statePath}')") }},
@@ -29,6 +27,8 @@
             wire:ignore
             wire:key="{{ $livewireKey }}.{{ $shapeKey }}"
             x-on:keydown.esc="rangeOpen && ($event.stopPropagation(), rangeClose())"
+            x-on:keydown.escape.window="rangeOpen && rangeDismiss()"
+            x-on:click.outside="rangeOpen && rangeDismiss()"
             @class(['fi-chrono', 'fi-chrono-range'])
         >
             <x-filament::input.wrapper
@@ -36,9 +36,9 @@
                 :valid="! $errors->has($statePath)"
                 :prefix-icon="$hasTime ? 'heroicon-m-clock' : 'heroicon-m-calendar-days'"
                 prefix-icon-color="gray"
+                x-ref="field"
                 x-bind:class="{ 'fi-chrono-open': rangeOpen }"
             >
-                {{-- Each half of the text opens its own end; Backspace on either clears the range. --}}
                 <div @if ($id) id="{{ $id }}" @endif class="fi-input fi-chrono-range-field">
                     @foreach (['start', 'end'] as $which)
                         @if ($which === 'end')
@@ -68,10 +68,9 @@
 
             @unless ($isDisabled || $isReadOnly)
                 <div
+                    x-ref="panel"
                     x-cloak
-                    x-show="rangeOpen"
                     x-float.placement.bottom-start.offset.flip.shift="{ offset: 8 }"
-                    x-on:click.outside="rangeOpen && (rangeSync(), rangeOpen = false)"
                     role="dialog"
                     aria-modal="false"
                     @class([
@@ -125,7 +124,7 @@
                     </div>
 
                     <div class="fi-chrono-footer">
-                        <x-filament::button type="button" color="gray" size="sm" x-show="rangeDraft.start || rangeDraft.end" x-on:click="rangeDraft = { start: null, end: null }; rangeEnds().forEach((end) => end.syncFromState()); rangeActive = 'start'">
+                        <x-filament::button type="button" color="gray" size="sm" x-show="rangeDraft.start || rangeDraft.end" x-on:click="rangeReset()">
                             {{ __('devletes-chrono-picker::chrono-picker.range.clear') }}
                         </x-filament::button>
 

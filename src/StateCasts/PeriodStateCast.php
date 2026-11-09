@@ -3,16 +3,11 @@
 namespace Devletes\ChronoPicker\StateCasts;
 
 use Carbon\CarbonInterface;
+use Carbon\Exceptions\InvalidFormatException;
 use Filament\Schemas\Components\StateCasts\DateTimeStateCast;
 use Illuminate\Support\Carbon;
 
-/**
- * Filament's date cast for a value coarser than a day: `Y-m` or `Y`, stored as written.
- *
- * Filament's own cast fills the missing parts from today, so a `Y-m` read on the 31st of a month lands in the next
- * month whenever the stored month is shorter, and a bare `2026` read by Carbon::parse() is twenty past eight tonight.
- * Here the missing parts are the period's first moment instead (`!` in the format).
- */
+/** Reads `Y-m` and `Y` from the period's first moment, where Filament's cast fills the gaps from today. */
 class PeriodStateCast extends DateTimeStateCast
 {
     public function get(mixed $state): ?string
@@ -49,11 +44,11 @@ class PeriodStateCast extends DateTimeStateCast
 
         try {
             $date = Carbon::createFromFormat('!'.$format, (string) $state, config('app.timezone'));
-        } catch (\Throwable) {
+        } catch (InvalidFormatException) {
             return null;
         }
 
-        // createFromFormat() rolls an impossible date over; only a value that reads back the same is that format.
-        return ($date !== false && $date !== null && $date->format($format) === (string) $state) ? $date : null;
+        // createFromFormat() rolls impossible dates over, so the value must read back unchanged.
+        return ($date && $date->format($format) === (string) $state) ? $date : null;
     }
 }

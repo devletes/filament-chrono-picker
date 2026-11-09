@@ -298,7 +298,7 @@ class RangePickerTest extends TestCase
     public function test_it_renders_both_ends_and_loads_on_request(): void
     {
         Livewire::test(RangePickerComponent::class, ['state' => ['starts_on' => '2026-01-01', 'ends_on' => '2026-01-20']])
-            ->assertSee('data-chrono-range', escape: false)
+            ->assertSee('fi-chrono-range-field', escape: false)
             ->assertSee('data-chrono-end="start"', escape: false)
             ->assertSee('data-chrono-end="end"', escape: false)
             ->assertSee('fi-chrono-range-side-by-side', escape: false)

@@ -77,20 +77,13 @@ class ChronoPanelTest extends TestCase
         $this->assertStringContainsString('js/devletes/filament-chrono-picker/components/chrono-picker.js?v=', $src);
         $this->assertStringContainsString('css/devletes/filament-chrono-picker/chrono-picker.css?v=', $href);
 
-        // Nothing of ours is in the panel's global <head>: both are requested by a field.
+        // Nothing is in the panel's <head>; a field requests both.
         $this->assertSame([], FilamentAsset::getScripts([ChronoPickerServiceProvider::PACKAGE]));
         $this->assertStringNotContainsString('chrono-picker.css', FilamentAsset::renderStyles([ChronoPickerServiceProvider::PACKAGE]) ?? '');
 
         Livewire::test(PickerComponent::class, ['time' => '09:30'])
             ->assertSee('x-load-src="'.e($src).'"', escape: false)
             ->assertSee('x-load-css', escape: false);
-    }
-
-    public function test_assets_are_versioned_by_their_contents(): void
-    {
-        $src = FilamentAsset::getAlpineComponentSrc(ChronoPickerServiceProvider::ASSET, ChronoPickerServiceProvider::PACKAGE);
-
-        $this->assertMatchesRegularExpression('/\?v=[0-9a-f]{12}$/', $src);
     }
 
     public function test_the_now_button_is_named_for_what_it_picks(): void

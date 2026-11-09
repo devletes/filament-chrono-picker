@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 
-// A smoke run of the range pickers in a real browser against the workbench (`composer serve`): one-at-a-time moves
-// from From to To, the field shows the picked range, and saving the page dehydrates into the configured storage.
+// Browser smoke test of the range pickers against the running workbench (`composer serve`).
 
 import { chromium } from 'playwright';
 
@@ -30,7 +29,7 @@ await fromPanel.locator('.fi-chrono-calendar-day', { hasText: /^10$/ }).click();
 await toPanel.waitFor({ state: 'visible' });
 check(await fromPanel.isHidden(), 'picking From moves the panel to To');
 
-// To keeps its own January value, which is still after From, so its panel stays on January: step back to December.
+// To still shows its own month, so step back to December.
 await toPanel.getByRole('button', { name: 'Previous month' }).click();
 check(await toPanel.locator('.fi-chrono-calendar-day', { hasText: /^9$/ }).evaluate((el) => el.classList.contains('fi-chrono-calendar-day-disabled')), 'To dims the days before From');
 

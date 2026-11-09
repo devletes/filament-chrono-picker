@@ -25,7 +25,7 @@
     --fi-chrono-hover: var(--gray-800, #1f2937);
 }
 
-/* Unstyled: Filament's input wrapper already draws the field. */
+/* Filament's input wrapper draws the field. */
 .fi-chrono-trigger {
     display: block;
     width: 100%;
@@ -54,8 +54,6 @@
     flex-direction: column;
     gap: 0.75rem;
     width: 17.5rem;
-    /* Filament's own pickers sit 8px below their field; x-float's offset never applies to a panel x-show reveals. */
-    margin-top: 0.5rem;
     padding: 0.875rem;
     border: 1px solid var(--fi-chrono-border);
     border-radius: 0.75rem;
@@ -139,7 +137,6 @@
     gap: 0.5rem;
 }
 
-/* Month and year side by side between the arrows; each opens its own grid. */
 .fi-chrono-calendar-title {
     display: flex;
     flex-grow: 1;
@@ -173,7 +170,6 @@ button.fi-chrono-calendar-heading:hover {
     cursor: default;
 }
 
-/* The month and year grids: three across, four down, the same rhythm as the days. */
 .fi-chrono-calendar-grid {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -410,7 +406,7 @@ button.fi-chrono-calendar-heading:hover {
     fill: var(--fi-chrono-accent);
 }
 
-/* The halo in the plate's colour keeps the label legible where the hand crosses it. */
+/* A halo keeps the label legible where the hand crosses it. */
 .fi-chrono-dial-label {
     fill: var(--fi-chrono-muted);
     font-size: 9px;
@@ -437,7 +433,6 @@ button.fi-chrono-calendar-heading:hover {
     fill: var(--fi-chrono-muted);
 }
 
-/* Sits on the hand's knob, so it takes the colour that reads against it. */
 .fi-chrono-numeral-selected {
     fill: var(--fi-chrono-on-accent);
     font-weight: 600;
@@ -448,13 +443,9 @@ button.fi-chrono-calendar-heading:hover {
     opacity: 0.55;
 }
 
-/* Ranges: one field showing both ends, each half opening its own end */
+/* Ranges */
 
-/*
- * Filament styles only `input.fi-input`, so the range's field takes the same box by hand: px-3 py-1.5, text-sm
- * leading-6 (text-base on iOS), gray-950 / white. Each half carries 0.25rem of the inline padding itself, so its
- * hover pill has room while the text still starts where an ordinary input's does.
- */
+/* Mirrors Filament's `input.fi-input`; each half carries 0.25rem of the inline padding for its hover pill. */
 .fi-chrono-range-field {
     display: flex;
     align-items: center;
@@ -464,7 +455,7 @@ button.fi-chrono-calendar-heading:hover {
     padding: 0.375rem 0.5rem;
     font-size: 0.875rem;
     line-height: 1.5rem;
-    color: var(--color-gray-950, #030712);
+    color: var(--gray-950);
     text-align: start;
 }
 
@@ -475,16 +466,15 @@ button.fi-chrono-calendar-heading:hover {
 }
 
 :where(.dark) .fi-chrono-range-field {
-    color: var(--color-white, #ffffff);
+    color: #fff;
 }
 
-/* Filament's disabled input: gray-500, gray-400 in dark (a read-only one keeps its colour, as Filament's does). */
 .fi-disabled .fi-chrono-range-field {
-    color: var(--color-gray-500, #6b7280);
+    color: var(--gray-500);
 }
 
 :where(.dark) .fi-disabled .fi-chrono-range-field {
-    color: var(--color-gray-400, #9ca3af);
+    color: var(--gray-400);
 }
 
 .fi-chrono-range-half {
@@ -520,21 +510,18 @@ button.fi-chrono-calendar-heading:hover {
     cursor: not-allowed;
 }
 
-/* Filament's placeholder: gray-400, gray-500 in dark. */
 .fi-chrono-range-placeholder {
-    color: var(--color-gray-400, #9ca3af);
+    color: var(--gray-400);
 }
 
 :where(.dark) .fi-chrono-range-placeholder {
-    color: var(--color-gray-500, #6b7280);
+    color: var(--gray-500);
 }
 
 .fi-chrono-range-separator {
     flex-shrink: 0;
     color: var(--fi-chrono-muted);
 }
-
-/* The panel: two ends beside each other, or one at a time under a From / To switch */
 
 .fi-chrono-range-panel {
     width: auto;
@@ -550,6 +537,7 @@ button.fi-chrono-calendar-heading:hover {
 }
 
 .fi-chrono-range-end {
+    box-sizing: content-box;
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
@@ -562,15 +550,6 @@ button.fi-chrono-calendar-heading:hover {
     border-inline-start: 1px solid var(--fi-chrono-border);
 }
 
-.fi-chrono-range-side-by-side .fi-chrono-range-end:has(+ .fi-chrono-range-end) {
-    width: 15.75rem;
-}
-
-.fi-chrono-range-side-by-side .fi-chrono-range-end + .fi-chrono-range-end {
-    width: calc(15.75rem + 1.25rem + 1px);
-}
-
-/* Each end is headed by its label alone: the value is already in the field and on the grid. */
 .fi-chrono-range-end-heading {
     padding: 0 0.125rem;
     color: var(--fi-chrono-muted);
@@ -591,7 +570,6 @@ button.fi-chrono-calendar-heading:hover {
     }
 
     .fi-chrono-range-side-by-side .fi-chrono-range-end + .fi-chrono-range-end {
-        width: 15.75rem;
         padding-inline-start: 0;
         padding-block-start: 1rem;
         border-inline-start: 0;

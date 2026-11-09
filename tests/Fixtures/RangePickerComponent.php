@@ -15,10 +15,7 @@ use Filament\Schemas\Contracts\HasSchemas;
 use Filament\Schemas\Schema;
 use Livewire\Component;
 
-/**
- * Every storage mode on one form: two columns (`starts_on` / `ends_on`), one JSON column (`stay`, keys `from` / `to`),
- * the same inside a relationship repeater (`legs`), and month, year and time ranges in plain Livewire state.
- */
+/** Every storage mode on one form: columns, JSON, a relationship repeater, and month, year and time ranges. */
 class RangePickerComponent extends Component implements HasActions, HasSchemas
 {
     use InteractsWithActions;
@@ -45,10 +42,11 @@ class RangePickerComponent extends Component implements HasActions, HasSchemas
      */
     public function mount(?Booking $record = null, array $state = [], bool $withRepeater = false): void
     {
-        $this->record = $record;
+        // Laravel 12's container injects an unsaved model when none is passed.
+        $this->record = $record?->exists ? $record : null;
         $this->withRepeater = $withRepeater;
 
-        $this->form->fill($record ? $record->attributesToArray() : $state);
+        $this->form->fill($this->record?->attributesToArray() ?? $state);
     }
 
     public function save(): void

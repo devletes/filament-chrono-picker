@@ -2,8 +2,8 @@
 
 namespace Devletes\ChronoPicker;
 
-use Devletes\ChronoPicker\Assets\HashedAlpineComponent;
-use Devletes\ChronoPicker\Assets\HashedCss;
+use Filament\Support\Assets\AlpineComponent;
+use Filament\Support\Assets\Css;
 use Filament\Support\Facades\FilamentAsset;
 use Illuminate\Support\ServiceProvider;
 
@@ -37,14 +37,13 @@ class ChronoPickerServiceProvider extends ServiceProvider
             __DIR__.'/../resources/lang' => lang_path('vendor/devletes-chrono-picker'),
         ], 'devletes-chrono-picker-translations');
 
-        // Both load on request: a field asks for them (x-load / x-load-css), so a page without one fetches nothing.
         FilamentAsset::register([
-            HashedAlpineComponent::make(self::ASSET, __DIR__.'/../resources/js/chrono-picker.js'),
-            HashedCss::make(self::ASSET, __DIR__.'/../resources/css/chrono-picker.css')->loadedOnRequest(),
+            AlpineComponent::make(self::ASSET, __DIR__.'/../resources/js/chrono-picker.js'),
+            Css::make(self::ASSET, __DIR__.'/../resources/css/chrono-picker.css')->loadedOnRequest(),
         ], package: self::PACKAGE);
     }
 
-    /** A config/time-picker.php published under the time picker's name keeps applying until it is renamed. Remove in 1.0. */
+    /** Applies a config/time-picker.php published by devletes/filament-time-picker. Remove in 1.0. */
     protected function mergeLegacyConfig(): void
     {
         $legacy = $this->app['config']->get('time-picker');

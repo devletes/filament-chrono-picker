@@ -47,7 +47,7 @@ Then publish Filament's assets so the stylesheet and script are served on your p
 php artisan filament:assets
 ```
 
-The package registers its stylesheet and script with Filament's asset manager as **on-request** assets: neither is in the page's `<head>`, and the first picker on a page fetches both (Filament's `x-load` and `x-load-css`). There is nothing to add to your custom Tailwind theme. Run `filament:assets` again after every update of the package, as for any Filament plugin; the asset URLs are versioned by the published files' contents.
+The package registers its stylesheet and script with Filament's asset manager as **on-request** assets: neither is in the page's `<head>`, and the first picker on a page fetches both (Filament's `x-load` and `x-load-css`). There is nothing to add to your custom Tailwind theme. Run `filament:assets` again after every update of the package, as for any Filament plugin.
 
 ## Moving from `devletes/filament-time-picker`
 

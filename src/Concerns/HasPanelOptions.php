@@ -4,7 +4,6 @@ namespace Devletes\ChronoPicker\Concerns;
 
 use Closure;
 
-/** The panel's footer and when it closes; shared by every picker. */
 trait HasPanelOptions
 {
     protected string|Closure|null $okLabel = null;

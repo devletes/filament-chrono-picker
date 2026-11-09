@@ -5,29 +5,23 @@ namespace Devletes\ChronoPicker\Concerns;
 use Carbon\CarbonInterface;
 use Carbon\Exceptions\InvalidFormatException;
 use Closure;
-use Devletes\ChronoPicker\ChronoPickerServiceProvider;
+use DateTimeInterface;
 use Devletes\ChronoPicker\Enums\PickerMode;
-use Filament\Support\Facades\FilamentAsset;
 use Illuminate\Support\Carbon;
-use Throwable;
 
-/**
- * The shared core: every single-value picker is a Filament date-time field with this panel in place of Filament's.
- *
- * A component is the trait, `setUpChronoPicker()` in its `setUp()`, and, where it picks something coarser than a
- * day, a `getPickerMode()` of its own. State casts, storage formats, timezones, bounds and validation stay Filament's.
- */
+/** Swaps a Filament date-time field's panel for Chrono Picker's; state, casts and validation stay Filament's. */
 trait InteractsWithChronoPanel
 {
     use HasClockOptions;
     use HasPanelOptions;
+    use LoadsAssets;
 
     protected function setUpChronoPicker(): void
     {
         $this->view('devletes-chrono-picker::picker');
         $this->native(false);
 
-        // The dial dims out-of-range numerals; the server enforces the bounds, since the panel is not the only way in.
+        // The dial only dims out-of-range times, so the bounds are enforced here too.
         $this->rule(
             static function (self $component): Closure {
                 return static function (string $attribute, mixed $value, Closure $fail) use ($component): void {
@@ -66,7 +60,7 @@ trait InteractsWithChronoPanel
         };
     }
 
-    /** No view sends rendering through Filament's embedded HTML, and with it the native input. */
+    /** A native field renders through Filament's own input instead of this view. */
     public function hasView(): bool
     {
         return (! $this->isNative()) && parent::hasView();
@@ -109,19 +103,7 @@ trait InteractsWithChronoPanel
         return $this->getHoursCycle() === 12 ? "g:i{$seconds} A" : "H:i{$seconds}";
     }
 
-    public function getAlpineComponentSrc(): string
-    {
-        return FilamentAsset::getAlpineComponentSrc(ChronoPickerServiceProvider::ASSET, ChronoPickerServiceProvider::PACKAGE);
-    }
-
-    public function getStylesheetHref(): string
-    {
-        return FilamentAsset::getStyleHref(ChronoPickerServiceProvider::ASSET, ChronoPickerServiceProvider::PACKAGE);
-    }
-
     /**
-     * Everything the panel needs, handed to the Alpine component as one object.
-     *
      * @return array<string, mixed>
      */
     public function getPickerConfig(): array
@@ -133,7 +115,6 @@ trait InteractsWithChronoPanel
         return [
             'mode' => $mode->value,
             'initialView' => $mode->initialView(),
-            // Filament keeps a non-native picker's state as a whole datetime, even for a time-only field.
             'internalFormat' => $this->getInternalFormat(),
             'displayFormat' => $this->getDisplayFormat(),
             'timeDisplayFormat' => $this->getTimeDisplayFormat(),
@@ -164,7 +145,7 @@ trait InteractsWithChronoPanel
     }
 
     /**
-     * @deprecated Use getPickerConfig(); kept for time picker callers.
+     * @deprecated Use getPickerConfig(). Remove in 1.0.
      *
      * @return array<string, mixed>
      */
@@ -250,7 +231,7 @@ trait InteractsWithChronoPanel
 
         try {
             return ($value instanceof CarbonInterface ? $value : Carbon::parse($value))->format('Y-m-d H:i:s');
-        } catch (Throwable) {
+        } catch (InvalidFormatException) {
             return null;
         }
     }
@@ -261,7 +242,7 @@ trait InteractsWithChronoPanel
     protected function getDisabledDatesAsStrings(): array
     {
         return collect($this->getDisabledDates())
-            ->map(fn (mixed $date): ?string => $this->normaliseDateTime($date instanceof \DateTimeInterface ? Carbon::instance($date) : (string) $date))
+            ->map(fn (mixed $date): ?string => $this->normaliseDateTime($date instanceof DateTimeInterface ? Carbon::instance($date) : (string) $date))
             ->filter()
             ->map(fn (string $date): string => substr($date, 0, 10))
             ->values()

@@ -8,7 +8,7 @@
     $hasDate = $config['hasDate'];
     $hasTime = $config['hasTime'];
 
-    // The panel is built server-side, so it is rebuilt whenever its shape changes.
+    // The panel is rendered on the server, so a change of shape re-keys it.
     $shapeKey = substr(md5(serialize([
         $config['mode'], $config['hoursCycle'], $config['hasSeconds'], $isDisabled, $isReadOnly,
         $config['minTime'], $config['maxTime'], $config['minutesStep'],
@@ -17,7 +17,6 @@
 @endphp
 
 <x-dynamic-component :component="$getFieldWrapperView()" :field="$field">
-    {{-- The stylesheet and the script both load on request, so a page without a picker fetches neither. --}}
     <div x-data="{}" x-load-css="[@js($getStylesheetHref())]" class="fi-chrono-assets">
         <div
             x-load
@@ -29,6 +28,8 @@
             wire:ignore
             wire:key="{{ $livewireKey }}.{{ $shapeKey }}"
             x-on:keydown.esc="open && ($event.stopPropagation(), close())"
+            x-on:keydown.escape.window="open && dismiss()"
+            x-on:click.outside="open && dismiss()"
             {{ $getExtraAlpineAttributeBag()->class(['fi-chrono']) }}
         >
             <x-filament::input.wrapper
@@ -36,6 +37,7 @@
                 :valid="! $errors->has($statePath)"
                 :prefix-icon="$hasDate ? 'heroicon-m-calendar-days' : 'heroicon-m-clock'"
                 prefix-icon-color="gray"
+                x-ref="field"
                 x-bind:class="{ 'fi-chrono-open': open }"
             >
                 <button
@@ -67,9 +69,7 @@
                 <div
                     x-ref="panel"
                     x-cloak
-                    x-show="open"
                     x-float.placement.bottom-start.offset.flip.shift="{ offset: 8 }"
-                    x-on:click.outside="close()"
                     role="dialog"
                     aria-modal="false"
                     @class(['fi-chrono-panel', 'fi-chrono-panel-with-date' => $hasDate])

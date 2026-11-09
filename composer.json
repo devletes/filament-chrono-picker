@@ -1,6 +1,6 @@
 {
     "name": "devletes/filament-chrono-picker",
-    "description": "Chrono Picker: time, date, date-time, month, year and range pickers for Filament, with a clock face, month and year grids, and one look with Filament's own. No date library, no build step.",
+    "description": "The ultimate date and time picker for Filament: time, date, month, year and range pickers with a clock face, calendar grids and Filament's own look.",
     "type": "library",
     "license": "MIT",
     "keywords": [

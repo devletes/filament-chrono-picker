@@ -4,8 +4,8 @@ namespace Devletes\ChronoPicker\Forms\Components;
 
 use Carbon\CarbonInterface;
 use Closure;
-use Devletes\ChronoPicker\ChronoPickerServiceProvider;
 use Devletes\ChronoPicker\Concerns\HasPanelOptions;
+use Devletes\ChronoPicker\Concerns\LoadsAssets;
 use Devletes\ChronoPicker\Enums\PickerMode;
 use Devletes\ChronoPicker\Enums\RangeLayout;
 use Devletes\ChronoPicker\Enums\RangeStorage;
@@ -13,30 +13,17 @@ use Filament\Forms\Components\Concerns\CanBeReadOnly;
 use Filament\Forms\Components\Concerns\HasPlaceholder;
 use Filament\Forms\Components\DateTimePicker as BaseDateTimePicker;
 use Filament\Forms\Components\Field;
-use Filament\Support\Facades\FilamentAsset;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use LogicException;
 
-/**
- * Two ends of one kind (dates, months, years or times) in a single field.
- *
- * Each end is a single-value picker of this package, built on demand and never added to the schema: it supplies the
- * panel's config, the state casts and the bounds, so a range reads, stores and validates each end exactly as the
- * single picker would. The range itself only says where the two ends are stored, how the panel lays them out, and
- * that the end is not before the start.
- *
- * Where the ends are stored is always the developer's call, never a default: `storeIn()` for two columns,
- * `storeAsJson()` for one array column. Leaving both out throws as soon as the field is filled or rendered.
- *
- * In Livewire the field's state is `[startKey => internal, endKey => internal]`, each end in Filament's internal
- * `Y-m-d H:i:s`; the keys are the JSON keys when stored as JSON, `start` and `end` otherwise.
- */
+/** Two ends in one field, each read, cast and bounded by an off-schema single picker. */
 abstract class RangePicker extends Field
 {
     use CanBeReadOnly;
     use HasPanelOptions;
     use HasPlaceholder;
+    use LoadsAssets;
 
     protected string $view = 'devletes-chrono-picker::range';
 
@@ -60,7 +47,6 @@ abstract class RangePicker extends Field
     /** @var array<int, Closure> */
     protected array $endPickerModifiers = [];
 
-    /** The single picker each end is: `DatePicker`, `MonthPicker`, `YearPicker` or `TimePicker`. */
     abstract protected function makeEndPicker(string $name): BaseDateTimePicker;
 
     protected function setUp(): void
@@ -72,9 +58,7 @@ abstract class RangePicker extends Field
         });
     }
 
-    // Storage
-
-    /** Two attributes beside the field, e.g. `storeIn(start: 'starts_on', end: 'ends_on')`. */
+    /** Stores the ends in two attributes beside the field. */
     public function storeIn(string|Closure $start, string|Closure $end): static
     {
         $this->storage = RangeStorage::Columns;
@@ -84,7 +68,7 @@ abstract class RangePicker extends Field
         return $this;
     }
 
-    /** One array/JSON attribute under the field's own name, with named keys, e.g. `storeAsJson(start: 'from', end: 'to')`. */
+    /** Stores the ends under named keys in one array attribute. */
     public function storeAsJson(string|Closure $start = 'start', string|Closure $end = 'end'): static
     {
         $this->storage = RangeStorage::Json;
@@ -108,7 +92,9 @@ abstract class RangePicker extends Field
         return $this->storage;
     }
 
-    /** The two keys of the field's own state, which are the JSON keys when stored as JSON. */
+    /**
+     * @return array{start: string, end: string}
+     */
     public function getStateKeys(): array
     {
         if ($this->getStorage() === RangeStorage::Json) {
@@ -118,7 +104,9 @@ abstract class RangePicker extends Field
         return ['start' => 'start', 'end' => 'end'];
     }
 
-    /** The absolute state paths of the two columns, beside the field in its own container. */
+    /**
+     * @return array{start: string, end: string}
+     */
     public function getColumnStatePaths(): array
     {
         $container = $this->getContainer()->getStatePath();
@@ -129,8 +117,6 @@ abstract class RangePicker extends Field
             'end' => $path((string) $this->evaluate($this->endTarget)),
         ];
     }
-
-    // Layout
 
     public function layout(RangeLayout|string|Closure $layout): static
     {
@@ -191,8 +177,6 @@ abstract class RangePicker extends Field
     {
         return $this->evaluate($this->endLabel) ?? __('devletes-chrono-picker::chrono-picker.range.end');
     }
-
-    // Options of the ends: each is passed on to both single pickers.
 
     public function format(string|Closure|null $format): static
     {
@@ -287,7 +271,7 @@ abstract class RangePicker extends Field
         return $this->forEachEnd('secondsStep', $step);
     }
 
-    /** Anything else a single picker offers: `configureEndsUsing(fn (DatePicker $end, string $which) => ...)`. */
+    /** Configures both end pickers: `fn (DatePicker $end, string $which) => ...`. */
     public function configureEndsUsing(Closure $callback): static
     {
         $this->endPickerModifiers[] = $callback;
@@ -302,7 +286,6 @@ abstract class RangePicker extends Field
         return $this;
     }
 
-    /** The single picker standing for one end, configured as the range was. */
     public function getEndPicker(string $which): BaseDateTimePicker
     {
         $picker = $this->makeEndPicker("{$this->getName()}_{$which}")
@@ -325,8 +308,6 @@ abstract class RangePicker extends Field
         return $this->getEndPicker('start')->getPickerMode();
     }
 
-    // State
-
     public function callAfterStateHydrated(): static
     {
         $this->hydrateRange();
@@ -334,7 +315,6 @@ abstract class RangePicker extends Field
         return parent::callAfterStateHydrated();
     }
 
-    /** Reads both ends from where they are stored into the field's own state, each through its picker's casts. */
     protected function hydrateRange(): void
     {
         $keys = $this->getStateKeys();
@@ -406,15 +386,12 @@ abstract class RangePicker extends Field
     {
         parent::dehydrateState($state, $isDehydrated);
 
-        // Stored in two columns, the field's own key is a working copy and nothing to save.
+        // Stored in columns, the field's own key is only a working copy.
         if ($isDehydrated && $this->isDehydrated() && $this->getStorage() === RangeStorage::Columns) {
             Arr::forget($state, $this->getStatePath());
         }
     }
 
-    // Validation
-
-    /** Both ends or neither, the end not before the start, and each end inside the bounds. */
     public function validateRange(mixed $value, Closure $fail): void
     {
         $keys = $this->getStateKeys();
@@ -436,7 +413,7 @@ abstract class RangePicker extends Field
             return;
         }
 
-        // A time range compares the time of day; Filament keeps a date in front of it that means nothing.
+        // A time range compares the time of day only.
         $comparable = fn (string $internal): string => $this->getPickerMode() === PickerMode::Time ? substr($internal, -8) : $internal;
 
         if ($comparable($end) < $comparable($start)) {
@@ -476,18 +453,6 @@ abstract class RangePicker extends Field
         }
     }
 
-    // The panel
-
-    public function getAlpineComponentSrc(): string
-    {
-        return FilamentAsset::getAlpineComponentSrc(ChronoPickerServiceProvider::ASSET, ChronoPickerServiceProvider::PACKAGE);
-    }
-
-    public function getStylesheetHref(): string
-    {
-        return FilamentAsset::getStyleHref(ChronoPickerServiceProvider::ASSET, ChronoPickerServiceProvider::PACKAGE);
-    }
-
     /**
      * @return array<string, mixed>
      */
@@ -513,8 +478,6 @@ abstract class RangePicker extends Field
     }
 
     /**
-     * Each end's panel: the single picker's config, set to hand every pick straight to the range.
-     *
      * @return array<string, mixed>
      */
     public function getEndConfig(string $which): array

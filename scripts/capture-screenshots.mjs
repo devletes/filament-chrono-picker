@@ -10,8 +10,7 @@ const outDir = resolve(__dirname, '..', 'docs/images');
 const baseUrl = process.env.WORKBENCH_URL ?? 'http://127.0.0.1:8766';
 const page_path = '/admin/deliveries';
 
-// Each target opens the picker in one data-demo section; `then` moves it to the state worth showing.
-// Stages are switched through Alpine rather than by clicking a digit, which would leave its text selected.
+// Each target opens a data-demo section's picker; `then` sets its state through Alpine so no text is left selected.
 const stage = (name) => (picker) => picker.evaluate((el, s) => { window.Alpine.$data(el).stage = s }, name);
 
 const targets = [

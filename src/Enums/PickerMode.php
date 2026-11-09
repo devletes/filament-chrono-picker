@@ -2,7 +2,6 @@
 
 namespace Devletes\ChronoPicker\Enums;
 
-/** What a single value picks, which decides the panel's first view and the views it can reach. */
 enum PickerMode: string
 {
     case Time = 'time';

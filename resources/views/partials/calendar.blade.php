@@ -1,8 +1,4 @@
-{{--
-    The calendar's three grids, each under a header of its own: the days of a month, the twelve months of a year,
-    and a page of years. The month name opens the months, the year opens the years, and picking in either goes back
-    to the grid it was opened from. A month or year picker starts on its own grid and never shows the days.
---}}
+{{-- Days, months and years; the month and year headings open their grids. --}}
 @php
     $labels = $config['labels'];
 @endphp

@@ -1,4 +1,3 @@
-{{-- The clock: the typed readout over the dial. --}}
 @php
     $isTwelveHour = $config['hoursCycle'] === 12;
     $hasSeconds = $config['hasSeconds'];

@@ -1,9 +1,6 @@
 <?php
 
-/*
- * The time picker shipped as devletes/filament-time-picker under Devletes\TimePicker. Its class names keep resolving,
- * lazily and only when asked for, to the classes that replaced them. Remove in Chrono Picker 1.0.
- */
+// Resolves devletes/filament-time-picker's Devletes\TimePicker classes to their replacements. Remove in 1.0.
 
 spl_autoload_register(static function (string $class): void {
     $legacy = 'Devletes\\TimePicker\\';

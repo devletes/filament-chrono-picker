@@ -3,10 +3,10 @@
 namespace Devletes\ChronoPicker\Concerns;
 
 use Carbon\CarbonInterface;
+use Carbon\Exceptions\InvalidFormatException;
 use Closure;
 use Illuminate\Support\Carbon;
 
-/** The dial: its hour cycle and the daily window it allows. */
 trait HasClockOptions
 {
     protected int|Closure|null $hoursCycle = null;
@@ -45,7 +45,6 @@ trait HasClockOptions
             return $cycle;
         }
 
-        // Unset: follow the display format's hour cycle.
         return $this->displayFormatIsTwelveHour() ? 12 : 24;
     }
 
@@ -59,25 +58,12 @@ trait HasClockOptions
         return $this->normaliseTime($this->evaluate($this->maxTime));
     }
 
-    /** `g`/`h` are the 12-hour tokens; a backslash (chr 92) escapes the next character. */
+    /** Whether the display format has an unescaped `g` or `h`. */
     protected function displayFormatIsTwelveHour(): bool
     {
-        $format = $this->getDisplayFormat();
-        $length = strlen($format);
+        $unescaped = preg_replace('/\\\\./', '', $this->getDisplayFormat());
 
-        for ($i = 0; $i < $length; $i++) {
-            if ($format[$i] === chr(92)) {
-                $i++;
-
-                continue;
-            }
-
-            if (in_array($format[$i], ['g', 'h'], strict: true)) {
-                return true;
-            }
-        }
-
-        return false;
+        return strpbrk($unescaped, 'gh') !== false;
     }
 
     protected function normaliseTime(CarbonInterface|string|null $time): ?string
@@ -92,7 +78,7 @@ trait HasClockOptions
 
         try {
             return Carbon::parse($time)->format('H:i:s');
-        } catch (\Throwable) {
+        } catch (InvalidFormatException) {
             return null;
         }
     }

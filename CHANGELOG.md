@@ -2,6 +2,17 @@
 
 All notable changes to `devletes/filament-chrono-picker` (formerly `devletes/filament-time-picker`) will be documented in this file.
 
+## [0.1.1] - 2026-11-09
+
+### Changed
+
+- The panel is opened and positioned by Filament's floating panel (`x-float`): 8px from the field, flipping above it and shifting inside the window when there is no room.
+- Assets are versioned by Filament's asset manager, like any Filament plugin's.
+
+### Fixed
+
+- The test suite on Laravel 12.
+
 ## [0.1.0] - 2026-11-09
 
 First pre-release of Chrono Picker. Changes are against `devletes/filament-time-picker` 1.0.0, whose history this package continues.
@@ -10,7 +21,6 @@ First pre-release of Chrono Picker. Changes are against `devletes/filament-time-
 
 - Renamed to Chrono Picker: `devletes/filament-chrono-picker`, namespace `Devletes\ChronoPicker`, provider `ChronoPickerServiceProvider`, config `chrono-picker`, views and translations `devletes-chrono-picker`, CSS `fi-chrono-*`, Alpine component `devletesChronoPicker`. The time picker's class names and a published `config/time-picker.php` keep working until Chrono Picker 1.0.
 - The script and stylesheet load on request (`x-load` / `x-load-css`) from the first field that needs them, instead of on every panel page. The script is now an ES module.
-- Asset URLs are versioned by the published files' contents.
 - The calendar's month dropdown and numeric year input are replaced by grids: click the month for the twelve months of the year, click the year for a page of twelve years, with arrows to page through either.
 - The footer's shortcut reads "Today" on a date-only field.
 - One shared core (`InteractsWithChronoPanel`) behind every picker; `getClockConfig()` is now `getPickerConfig()`, the old name kept.
@@ -20,7 +30,6 @@ First pre-release of Chrono Picker. Changes are against `devletes/filament-time-
 - `DatePicker`, extending Filament's own.
 - `MonthPicker` (stored `Y-m`, shown `M Y`) and `YearPicker` (stored `Y`), on Filament's `DatePicker`, opening on the month or year grid. Bounds are whole periods, and a stored month reads back as itself on any day of the month.
 - `DateRangePicker`, `MonthRangePicker`, `YearRangePicker` and `TimeRangePicker`: both ends in one field ("Jan 2026 – Jun 2026"), each end the matching single picker. Stored where the developer says: `storeIn(start:, end:)` for two columns (on a record, in a repeater or relationship, or in plain Livewire state) or `storeAsJson(start:, end:)` for one array column with named keys; unconfigured throws. Two layouts: `sideBySide()` (default) and `oneAtATime()`, whose From and To halves of the field text each open their end. Validated on the server: both ends or neither, end not before start, bounds on each end.
-- A panel that would run off the right of the window is moved back inside it.
 
 ## [time-picker 1.0.0] - 2026-10-25
 

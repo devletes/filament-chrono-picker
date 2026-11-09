@@ -1,7 +1,3 @@
-// Chrono Picker's panel. An ES module loaded on request by Filament's x-load, whose default export Alpine registers
-// under the name the field's x-data calls. Module scope keeps these helpers out of the page's globals, which is what
-// the 1.x IIFE was for when the file was served as a classic script.
-
 const OUTER_RADIUS = 84
 const INNER_RADIUS = 54
 const RING_BOUNDARY = 69
@@ -28,13 +24,15 @@ const parseBound = (value) => {
     return toSeconds(parts[0] ?? 0, parts[1] ?? 0, parts[2] ?? 0)
 }
 
-const names = (locale, options, count, dateFor) => Array.from({ length: count }, (_, index) => {
-    try {
-        return new Intl.DateTimeFormat(locale, options).format(dateFor(index))
-    } catch (exception) {
-        return new Intl.DateTimeFormat('en', options).format(dateFor(index))
-    }
-})
+const formatter = (locale, options) => Intl.DateTimeFormat.supportedLocalesOf(locale ?? []).length
+    ? new Intl.DateTimeFormat(locale, options)
+    : new Intl.DateTimeFormat('en', options)
+
+const names = (locale, options, count, dateFor) => {
+    const format = formatter(locale, options)
+
+    return Array.from({ length: count }, (_, index) => format.format(dateFor(index)))
+}
 
 const monthNames = (locale, style) => names(locale, { month: style }, 12, (index) => new Date(2020, index, 1))
 
@@ -91,8 +89,7 @@ export const formatValue = ({ year, month, day, hour, minute, second }, format, 
     return out
 }
 
-// Filament's state is a whole Y-m-d H:i:s, so each part is matched by its shape, not by the first numbers.
-// A date with no time reads as midnight; a time with no date takes today's.
+// Reads a date, a time or both by their shape; missing parts are midnight or today.
 export const parseValue = (value) => {
     if (typeof value !== 'string' || value.trim() === '') {
         return null
@@ -142,32 +139,11 @@ const dateOf = (value) => {
 
 const monthKey = (year, month) => `${year}-${pad2(month)}`
 
-// Filament's x-float only places a panel it opened itself, never one x-show reveals, so the panel sits under the
-// field as laid out. A range's two calendars are wide enough to run off the right of the window from a field on
-// the right of a form: once shown, the panel is moved left by whatever overhangs, never past the window's left.
-const fitPanel = (panel) => {
-    if (! panel) {
-        return
-    }
-
-    panel.style.marginInlineStart = ''
-
-    requestAnimationFrame(() => {
-        const rect = panel.getBoundingClientRect()
-        const gutter = 8
-        const overhang = rect.right - (document.documentElement.clientWidth - gutter)
-
-        if (overhang > 0) {
-            panel.style.marginInlineStart = `-${Math.min(overhang, Math.max(0, rect.left - gutter))}px`
-        }
-    })
-}
-
-// A range: the field, the footer, and two ends. Each end is a single picker of its own (below) in `embedded`
-// mode, which reads and writes this component's draft rather than Livewire. Every name here starts with `range`
-// so the ends, whose scope sits inside this one, never shadow it or are shadowed by it.
+// Two embedded single pickers share this scope, so every name here is prefixed to avoid shadowing.
 const rangePicker = ({ config, state }) => {
-    let root = null
+    const ends = {}
+    let panel = null
+    let field = null
     const keyOf = (which) => config.keys[which]
 
     return {
@@ -177,13 +153,12 @@ const rangePicker = ({ config, state }) => {
         rangeActive: 'start',
         rangeDraft: { start: null, end: null },
         rangeText: { start: '', end: '' },
-        rangeFlushing: false,
 
         init() {
-            root = this.$el
+            panel = this.$refs.panel
+            field = this.$refs.field
             this.rangeSync()
 
-            // Follow server-side changes (other actions, form resets) while closed.
             this.$watch('rangeState', () => {
                 if (! this.rangeOpen) {
                     this.rangeSync()
@@ -207,7 +182,7 @@ const rangePicker = ({ config, state }) => {
             return parsed ? formatValue(parsed, config.displayFormat, config.locale) : ''
         },
 
-        // A time range compares the time of day: the date in front of it is whatever day it was picked on.
+        // A time range compares the time of day only.
         rangeComparable(value) {
             return config.mode === 'time' ? String(value).slice(-8) : String(value)
         },
@@ -221,12 +196,12 @@ const rangePicker = ({ config, state }) => {
             this.rangeText = { start: this.rangeFormat(this.rangeDraft.start), end: this.rangeFormat(this.rangeDraft.end) }
         },
 
-        rangeEnds() {
-            return root ? [...root.querySelectorAll('[data-chrono-end]')].map((el) => window.Alpine.$data(el)) : []
+        rangeRegister(which, end) {
+            ends[which] = end
         },
 
-        rangeEnd(which) {
-            return this.rangeEnds().find((end) => end.embedded === which)
+        rangeEnds() {
+            return Object.values(ends)
         },
 
         rangeShow(which = 'start') {
@@ -237,16 +212,23 @@ const rangePicker = ({ config, state }) => {
             if (! this.rangeOpen) {
                 this.rangeSync()
                 this.rangeEnds().forEach((end) => end.syncFromState())
+                panel?.open(field)
             }
 
             this.rangeActive = which
             this.rangeOpen = true
-            this.$nextTick(() => fitPanel(root?.querySelector('.fi-chrono-range-panel')))
+        },
+
+        rangeDismiss() {
+            this.rangeSync()
+            this.rangeOpen = false
+            panel?.close()
         },
 
         rangeClose() {
             this.rangeOpen = false
-            root?.querySelector('[data-chrono-range-trigger]')?.focus()
+            panel?.close()
+            field?.querySelector('[data-chrono-range-trigger]')?.focus()
         },
 
         rangeCancel() {
@@ -254,24 +236,18 @@ const rangePicker = ({ config, state }) => {
             this.rangeClose()
         },
 
-        // An end hands over what was picked in it.
         rangePick(which, value) {
             this.rangeDraft[which] = value
-
-            if (this.rangeFlushing) {
-                return
-            }
 
             if (which === 'start') {
                 const end = this.rangeDraft.end
 
-                // A new start after the end leaves no range; the end is picked again.
+                // A start after the end clears the end.
                 if (end && value && this.rangeComparable(end) < this.rangeComparable(value)) {
                     this.rangeDraft.end = null
                 }
 
-                // The To panel follows: it opens near the start and dims what comes before it.
-                this.rangeEnd('end')?.syncFromState()
+                ends.end?.syncFromState()
 
                 if (config.layout === 'one-at-a-time') {
                     this.rangeActive = 'end'
@@ -286,14 +262,22 @@ const rangePicker = ({ config, state }) => {
         },
 
         rangeConfirm() {
-            // A time typed into an end but not finished on the dial is still taken.
-            this.rangeFlushing = true
-            this.rangeEnds().forEach((end) => end.commit())
-            this.rangeFlushing = false
+            // Take a time typed into an end but not finished on the dial.
+            this.rangeEnds().forEach((end) => {
+                if (end.draftValue !== null) {
+                    this.rangeDraft[end.embedded] = end.draftValue
+                }
+            })
 
             this.rangeState = { [keyOf('start')]: this.rangeDraft.start, [keyOf('end')]: this.rangeDraft.end }
             this.rangeText = { start: this.rangeFormat(this.rangeDraft.start), end: this.rangeFormat(this.rangeDraft.end) }
             this.rangeClose()
+        },
+
+        rangeReset() {
+            this.rangeDraft = { start: null, end: null }
+            this.rangeEnds().forEach((end) => end.syncFromState())
+            this.rangeActive = 'start'
         },
 
         rangeClear() {
@@ -308,9 +292,6 @@ export default function devletesChronoPicker({ config, state = null, embedded = 
         return rangePicker({ config, state })
     }
 
-    // The range this picker is one end of, when it is; held outside Alpine's reactive data.
-    let range = null
-
     return {
         config,
         state,
@@ -319,7 +300,7 @@ export default function devletesChronoPicker({ config, state = null, embedded = 
         open: false,
         stage: 'hour',
         view: config.initialView,
-        // The view a month or year grid goes back to once something is picked in it.
+        // Where a month or year grid returns to after a pick.
         returnView: config.initialView,
 
         year: null,
@@ -342,16 +323,14 @@ export default function devletesChronoPicker({ config, state = null, embedded = 
         dragging: false,
 
         init() {
+            this.syncFromState()
+
             if (this.embedded) {
-                range = window.Alpine.$data(this.$el.parentElement.closest('[data-chrono-range]'))
-                this.syncFromState()
+                this.rangeRegister(this.embedded, this)
 
                 return
             }
 
-            this.syncFromState()
-
-            // Follow server-side changes (other actions, form resets) while closed.
             this.$watch('state', () => {
                 if (! this.open) {
                     this.syncFromState()
@@ -367,15 +346,14 @@ export default function devletesChronoPicker({ config, state = null, embedded = 
             return this.config.mode
         },
 
-        // Reading and writing the field: Livewire's state, or the range's draft for an end of a range
-
+        // An end of a range reads and writes the range's draft instead of Livewire.
         readState() {
-            return this.embedded ? (range?.rangeDraftOf(this.embedded) ?? null) : this.state
+            return this.embedded ? (this.rangeDraftOf(this.embedded) ?? null) : this.state
         },
 
         writeState(value) {
             if (this.embedded) {
-                range?.rangePick(this.embedded, value)
+                this.rangePick(this.embedded, value)
 
                 return
             }
@@ -383,10 +361,10 @@ export default function devletesChronoPicker({ config, state = null, embedded = 
             this.state = value
         },
 
-        // The earliest date this panel offers: the field's minimum and, on a range's To panel, its From.
+        // A range's To starts no earlier than its From.
         get lowerDate() {
             const own = this.config.minDate
-            const start = (this.embedded === 'end' && this.config.hasDate) ? range?.rangeDraftOf('start') : null
+            const start = (this.embedded === 'end' && this.config.hasDate) ? this.rangeDraftOf('start') : null
 
             if (! start) {
                 return own
@@ -412,8 +390,8 @@ export default function devletesChronoPicker({ config, state = null, embedded = 
                 this.month = parsed?.month ?? null
                 this.day = parsed?.day ?? null
 
-                // An empty To opens where From is, rather than wherever today is.
-                const fromStart = this.embedded === 'end' ? parseValue(range?.rangeDraftOf('start')) : null
+                // An empty To opens on From's month.
+                const fromStart = this.embedded === 'end' ? parseValue(this.rangeDraftOf('start')) : null
                 const focus = parsed ?? fromStart ?? parseValue(this.config.defaultFocusedDate) ?? today()
 
                 this.focusedYear = focus.year
@@ -478,8 +456,6 @@ export default function devletesChronoPicker({ config, state = null, embedded = 
             this.syncFromState()
         },
 
-        // The panel
-
         toggle() {
             this.open ? this.close() : this.show()
         },
@@ -487,22 +463,26 @@ export default function devletesChronoPicker({ config, state = null, embedded = 
         show() {
             this.syncFromState()
             this.open = true
-            this.$nextTick(() => fitPanel(this.$refs.panel))
+            this.$refs.panel?.open(this.$refs.field)
+        },
+
+        dismiss() {
+            this.open = false
+            this.dragging = false
+            this.$refs.panel?.close()
         },
 
         close() {
-            this.open = false
-            this.dragging = false
+            this.dismiss()
             this.$refs.trigger?.focus()
         },
 
         cancel() {
             this.syncFromState()
-            this.open = false
-            this.$refs.trigger?.focus()
+            this.close()
         },
 
-        // An end of a range has no panel of its own to close: confirming hands the pick to the range.
+        // An end of a range hands its pick to the range instead of closing.
         confirm() {
             this.commit()
 
@@ -540,8 +520,6 @@ export default function devletesChronoPicker({ config, state = null, embedded = 
                 this.confirm()
             }
         },
-
-        // The calendar
 
         get monthNames() {
             return monthNames(this.config.locale, 'long')
@@ -647,8 +625,6 @@ export default function devletesChronoPicker({ config, state = null, embedded = 
             return this.view !== 'time'
         },
 
-        // The month grid: twelve months of the focused year
-
         showMonths() {
             if (this.view !== 'years') {
                 this.returnView = this.view
@@ -706,8 +682,6 @@ export default function devletesChronoPicker({ config, state = null, embedded = 
             this.focusedYear++
         },
 
-        // The year grid: a page of years, paged with the arrows
-
         pageStartFor(year) {
             const size = this.config.yearsPerPage
 
@@ -762,7 +736,6 @@ export default function devletesChronoPicker({ config, state = null, embedded = 
             this.focusedYear = year
 
             if (this.mode !== 'year') {
-                // Back to whichever grid sent us here: the days, or the months.
                 this.view = ['date', 'months'].includes(this.returnView) ? this.returnView : 'date'
 
                 return
@@ -790,8 +763,7 @@ export default function devletesChronoPicker({ config, state = null, embedded = 
                 : formatValue({ ...today(), hour: this.hour, minute: this.minute ?? 0, second: this.second ?? 0 }, this.config.timeDisplayFormat, this.config.locale)
         },
 
-        // Bounds for the selected day: the daily window, narrowed by minDate/maxDate on their own day
-
+        // minDate/maxDate narrow the daily window on their own day.
         boundOnSelectedDay(value) {
             if (! this.config.hasTime || ! this.config.hasDate || ! value || this.selectedKey !== value.slice(0, 10)) {
                 return null
@@ -802,8 +774,7 @@ export default function devletesChronoPicker({ config, state = null, embedded = 
 
         get minBound() {
             const own = parseBound(this.config.minTime)
-            // A time range's To may not come before its From.
-            const start = (this.embedded === 'end' && this.mode === 'time') ? parseBound(range?.rangeDraftOf('start')?.slice(11)) : null
+            const start = (this.embedded === 'end' && this.mode === 'time') ? parseBound(this.rangeDraftOf('start')?.slice(11)) : null
             const daily = own === null ? start : (start === null ? own : Math.max(own, start))
             const dated = this.boundOnSelectedDay(this.config.minDate)
 
@@ -826,8 +797,6 @@ export default function devletesChronoPicker({ config, state = null, embedded = 
                 second: labels.selectSecond,
             }[this.stage]
         },
-
-        // The hand
 
         get hasSelection() {
             return this.currentStageValue !== null
@@ -861,8 +830,6 @@ export default function devletesChronoPicker({ config, state = null, embedded = 
             return this.config.hoursCycle === 24 && (hour === 0 || hour >= 13)
         },
 
-        // Numerals
-
         numeralClass(stage, value) {
             return {
                 'fi-chrono-numeral-selected': this.isNumeralSelected(stage, value),
@@ -888,7 +855,7 @@ export default function devletesChronoPicker({ config, state = null, embedded = 
                 : this.hour % 12 === value % 12
         },
 
-        // Allowed when any time the numeral could still lead to is inside the bounds.
+        // Allowed when any time the numeral leads to is inside the bounds.
         isNumeralAllowed(stage, value) {
             const min = this.minBound
             const max = this.maxBound
@@ -937,7 +904,7 @@ export default function devletesChronoPicker({ config, state = null, embedded = 
                         return true
                     }
 
-                    // A 12-hour numeral has no half of day, so check the hour this switch would produce.
+                    // A 12-hour numeral has no half of day, so check the hour this switch produces.
                     const min = this.minBound
                     const max = this.maxBound
                     const from = toSeconds(hour, 0, 0)
@@ -951,8 +918,6 @@ export default function devletesChronoPicker({ config, state = null, embedded = 
 
             return false
         },
-
-        // Meridiem
 
         get meridiem() {
             if (this.hour === null) {
@@ -975,21 +940,13 @@ export default function devletesChronoPicker({ config, state = null, embedded = 
             this.syncText()
         },
 
-        // Pointer
-
         onPointerDown(event) {
-            if (event.button !== undefined && event.button !== 0) {
+            if (event.button !== 0) {
                 return
             }
 
             this.dragging = true
-
-            try {
-                this.$refs.face.setPointerCapture(event.pointerId)
-            } catch (exception) {
-                // Capture is optional; without it the drag ends when the pointer leaves the face.
-            }
-
+            this.$refs.face.setPointerCapture(event.pointerId)
             this.applyPointer(event)
             event.preventDefault()
         },
@@ -1010,7 +967,7 @@ export default function devletesChronoPicker({ config, state = null, embedded = 
 
             this.dragging = false
 
-            // A release on a dimmed numeral picks nothing, so it must not move on to the next dial.
+            // A release on a dimmed numeral picks nothing and stays on this dial.
             if (this.applyPointer(event)) {
                 this.advanceStage()
             }
@@ -1098,8 +1055,6 @@ export default function devletesChronoPicker({ config, state = null, embedded = 
             }
         },
 
-        // Typing
-
         onTyped(part, event) {
             const digits = event.target.value.replace(/\D/g, '').slice(0, 2)
 
@@ -1134,7 +1089,7 @@ export default function devletesChronoPicker({ config, state = null, embedded = 
                 this[part] = typed
             }
 
-            // Move on after two digits, or after a first digit no second digit could extend.
+            // Move on after two digits, or one no second digit could extend.
             const cannotExtend = part === 'hour'
                 ? typed > (this.config.hoursCycle === 24 ? 2 : 1)
                 : typed > 5
@@ -1197,8 +1152,6 @@ export default function devletesChronoPicker({ config, state = null, embedded = 
             this.secondText = this.second === null ? '' : pad2(this.second)
         },
 
-        // Bounds
-
         snap(value, step, wrap) {
             if (step <= 1) {
                 return value
@@ -1207,7 +1160,7 @@ export default function devletesChronoPicker({ config, state = null, embedded = 
             return (Math.round(value / step) * step) % wrap
         },
 
-        // Typing and arrow keys can reach times the dial refuses, so clamp the draft here.
+        // Typing and arrow keys can reach times the dial refuses.
         pullIntoBounds() {
             if (! this.config.hasTime || this.hour === null) {
                 return
