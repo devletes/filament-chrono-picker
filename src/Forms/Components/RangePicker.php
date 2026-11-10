@@ -470,6 +470,7 @@ abstract class RangePicker extends Field
             'separator' => $this->getRangeSeparator(),
             'closeOnComplete' => $this->shouldCloseOnComplete(),
             'isDisabled' => $this->isDisabled(),
+            'isReadOnly' => $this->isReadOnly(),
             'labels' => [
                 'start' => $this->getStartLabel(),
                 'end' => $this->getEndLabel(),

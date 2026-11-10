@@ -320,7 +320,7 @@ DateRangePicker::make('closure')
 <td width="50%"><img src="docs/images/date_range_one_at_a_time_dark.png" alt="A date range one at a time, on To (dark)"></td>
 </tr></table>
 
-Either way, the To panel opens where From is and dims what comes before it; picking a From after the current To clears To so it is picked again; **OK** saves the pair, **Cancel** or a click outside leaves the field as it was, and **Clear** empties both ends. `closeOnComplete()` saves and closes as soon as To is picked.
+Either way, the To panel opens where From is and dims what comes before it; picking a From after the current To clears To so it is picked again; each end is saved as soon as it is picked, so **OK** or a click outside just closes the panel, **Cancel** puts back the range it opened on, and **Clear** empties both ends. `closeOnComplete()` closes as soon as To is picked.
 
 ### Months, years and times
 

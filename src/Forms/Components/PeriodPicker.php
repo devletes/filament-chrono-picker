@@ -61,7 +61,7 @@ abstract class PeriodPicker extends BaseDatePicker
             app(PeriodStateCast::class, [
                 'format' => $this->getFormat(),
                 'internalFormat' => $this->getInternalFormat(),
-                'timezone' => null,
+                'timezone' => config('app.timezone'),
             ]),
         ];
     }

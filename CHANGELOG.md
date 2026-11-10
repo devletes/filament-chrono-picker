@@ -2,6 +2,17 @@
 
 All notable changes to `devletes/filament-chrono-picker` (formerly `devletes/filament-time-picker`) will be documented in this file.
 
+## [0.1.2] - 2026-11-10
+
+### Changed
+
+- Clicking anywhere on a field opens its panel, the icon included.
+- A range saves each end as it is picked; OK only closes the panel, and Cancel restores the range it opened on.
+
+### Fixed
+
+- `MonthPicker`, `YearPicker` and their ranges crashed on Filament before 5.10, whose date cast needs a timezone; periods now read in the app's.
+
 ## [0.1.1] - 2026-11-09
 
 ### Changed

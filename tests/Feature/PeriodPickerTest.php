@@ -4,6 +4,7 @@ namespace Devletes\ChronoPicker\Tests\Feature;
 
 use Devletes\ChronoPicker\Forms\Components\MonthPicker;
 use Devletes\ChronoPicker\Forms\Components\YearPicker;
+use Devletes\ChronoPicker\StateCasts\PeriodStateCast;
 use Devletes\ChronoPicker\Tests\Fixtures\PeriodPickerComponent;
 use Devletes\ChronoPicker\Tests\TestCase;
 use Filament\Schemas\Schema;
@@ -60,6 +61,18 @@ class PeriodPickerTest extends TestCase
             ->assertHasNoErrors()
             ->assertSet('saved.billing_month', '2027-11')
             ->assertSet('saved.fiscal_year', '2030');
+    }
+
+    public function test_the_period_cast_reads_in_the_app_timezone(): void
+    {
+        // Filament before 5.10 types the cast's timezone as a non-nullable string.
+        $casts = array_values(array_filter(
+            MonthPicker::make('m')->getDefaultStateCasts(),
+            static fn (object $cast): bool => $cast instanceof PeriodStateCast,
+        ));
+
+        $this->assertCount(1, $casts);
+        $this->assertSame(config('app.timezone'), (fn (): ?string => $this->timezone)->call($casts[0]));
     }
 
     public function test_empty_stays_empty(): void

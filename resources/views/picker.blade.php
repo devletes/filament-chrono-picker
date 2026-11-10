@@ -38,12 +38,12 @@
                 :prefix-icon="$hasDate ? 'heroicon-m-calendar-days' : 'heroicon-m-clock'"
                 prefix-icon-color="gray"
                 x-ref="field"
+                x-on:click="toggle()"
                 x-bind:class="{ 'fi-chrono-open': open }"
             >
                 <button
                     type="button"
                     x-ref="trigger"
-                    x-on:click="toggle()"
                     x-on:keydown.enter.prevent.stop="toggle()"
                     x-on:keydown.backspace.prevent.stop="clear()"
                     x-on:keydown.delete.prevent.stop="clear()"

@@ -144,6 +144,7 @@ const rangePicker = ({ config, state }) => {
     const ends = {}
     let panel = null
     let field = null
+    let opened = { start: null, end: null }
     const keyOf = (which) => config.keys[which]
 
     return {
@@ -205,12 +206,13 @@ const rangePicker = ({ config, state }) => {
         },
 
         rangeShow(which = 'start') {
-            if (config.isDisabled) {
+            if (config.isDisabled || config.isReadOnly) {
                 return
             }
 
             if (! this.rangeOpen) {
                 this.rangeSync()
+                opened = { ...this.rangeDraft }
                 this.rangeEnds().forEach((end) => end.syncFromState())
                 panel?.open(field)
             }
@@ -220,20 +222,25 @@ const rangePicker = ({ config, state }) => {
         },
 
         rangeDismiss() {
-            this.rangeSync()
             this.rangeOpen = false
             panel?.close()
         },
 
         rangeClose() {
-            this.rangeOpen = false
-            panel?.close()
-            field?.querySelector('[data-chrono-range-trigger]')?.focus()
+            this.rangeDismiss()
+            field?.querySelector('[data-chrono-half="start"]')?.focus()
         },
 
+        // Picks are saved as they are made, so Cancel puts back the range the panel opened on.
         rangeCancel() {
-            this.rangeSync()
+            this.rangeDraft = { ...opened }
+            this.rangeCommit()
             this.rangeClose()
+        },
+
+        rangeCommit() {
+            this.rangeState = { [keyOf('start')]: this.rangeDraft.start, [keyOf('end')]: this.rangeDraft.end }
+            this.rangeText = { start: this.rangeFormat(this.rangeDraft.start), end: this.rangeFormat(this.rangeDraft.end) }
         },
 
         rangePick(which, value) {
@@ -248,6 +255,7 @@ const rangePicker = ({ config, state }) => {
                 }
 
                 ends.end?.syncFromState()
+                this.rangeCommit()
 
                 if (config.layout === 'one-at-a-time') {
                     this.rangeActive = 'end'
@@ -256,8 +264,10 @@ const rangePicker = ({ config, state }) => {
                 return
             }
 
+            this.rangeCommit()
+
             if (config.closeOnComplete && this.rangeDraft.start) {
-                this.rangeConfirm()
+                this.rangeClose()
             }
         },
 
@@ -269,8 +279,7 @@ const rangePicker = ({ config, state }) => {
                 }
             })
 
-            this.rangeState = { [keyOf('start')]: this.rangeDraft.start, [keyOf('end')]: this.rangeDraft.end }
-            this.rangeText = { start: this.rangeFormat(this.rangeDraft.start), end: this.rangeFormat(this.rangeDraft.end) }
+            this.rangeCommit()
             this.rangeClose()
         },
 
@@ -278,6 +287,7 @@ const rangePicker = ({ config, state }) => {
             this.rangeDraft = { start: null, end: null }
             this.rangeEnds().forEach((end) => end.syncFromState())
             this.rangeActive = 'start'
+            this.rangeCommit()
         },
 
         rangeClear() {
@@ -461,6 +471,10 @@ export default function devletesChronoPicker({ config, state = null, embedded = 
         },
 
         show() {
+            if (this.config.isDisabled || this.config.isReadOnly) {
+                return
+            }
+
             this.syncFromState()
             this.open = true
             this.$refs.panel?.open(this.$refs.field)

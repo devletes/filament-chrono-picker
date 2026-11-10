@@ -37,6 +37,7 @@
                 :prefix-icon="$hasTime ? 'heroicon-m-clock' : 'heroicon-m-calendar-days'"
                 prefix-icon-color="gray"
                 x-ref="field"
+                x-on:click="rangeShow($event.target.closest('[data-chrono-half]')?.dataset.chronoHalf ?? (rangeOpen ? rangeActive : 'start'))"
                 x-bind:class="{ 'fi-chrono-open': rangeOpen }"
             >
                 <div @if ($id) id="{{ $id }}" @endif class="fi-input fi-chrono-range-field">
@@ -47,8 +48,7 @@
 
                         <button
                             type="button"
-                            @if ($which === 'start') data-chrono-range-trigger @endif
-                            x-on:click="rangeShow('{{ $which }}')"
+                            data-chrono-half="{{ $which }}"
                             x-on:keydown.enter.prevent.stop="rangeShow('{{ $which }}')"
                             x-on:keydown.backspace.prevent.stop="rangeClear()"
                             x-on:keydown.delete.prevent.stop="rangeClear()"

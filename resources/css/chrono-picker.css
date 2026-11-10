@@ -25,6 +25,15 @@
     --fi-chrono-hover: var(--gray-800, #1f2937);
 }
 
+/* The whole field opens the panel. */
+.fi-chrono .fi-input-wrp {
+    cursor: pointer;
+}
+
+.fi-chrono .fi-input-wrp.fi-disabled {
+    cursor: not-allowed;
+}
+
 /* Filament's input wrapper draws the field. */
 .fi-chrono-trigger {
     display: block;
