@@ -28,7 +28,7 @@ const targets = [
     { file: 'month_years', demo: 'month', then: (picker) => picker.locator('[x-show="view === \'months\'"] [aria-label="Choose a year"]').click() },
     { file: 'year', demo: 'year' },
     { file: 'date_range', demo: 'date-range' },
-    { file: 'date_range_one_at_a_time', demo: 'date-range-one-at-a-time', open: 'end' },
+    { file: 'date_range_compact', demo: 'date-range-compact', open: 'end' },
     { file: 'month_range', demo: 'month-range' },
     { file: 'year_range', demo: 'year-range' },
     { file: 'time_range', demo: 'time-range' },

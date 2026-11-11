@@ -43,7 +43,7 @@ class ChronoPickerServiceProvider extends ServiceProvider
         ], package: self::PACKAGE);
     }
 
-    /** Applies a config/time-picker.php published by devletes/filament-time-picker. Remove in 1.0. */
+    /** Applies a config/time-picker.php published by devletes/filament-time-picker. Remove in the next major release. */
     protected function mergeLegacyConfig(): void
     {
         $legacy = $this->app['config']->get('time-picker');

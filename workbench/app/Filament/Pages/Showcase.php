@@ -51,9 +51,9 @@ class Showcase extends Page implements HasSchemas
             'delivered_on' => now()->addWeek()->toDateString(),
             'billing_month' => now()->format('Y-m'),
             'fiscal_year' => now()->year,
-            'window_starts_on' => now()->addDays(3)->toDateString(),
-            'window_ends_on' => now()->addDays(9)->toDateString(),
-            'closure' => ['from' => now()->setDate(now()->year, 12, 24)->toDateString(), 'to' => now()->setDate(now()->year + 1, 1, 2)->toDateString()],
+            'deliver_from' => now()->addDays(3)->toDateString(),
+            'deliver_until' => now()->addDays(9)->toDateString(),
+            'holiday' => ['from' => now()->setDate(now()->year, 12, 24)->toDateString(), 'to' => now()->setDate(now()->year + 1, 1, 2)->toDateString()],
             'contract_starts' => now()->startOfYear()->format('Y-m'),
             'contract_ends' => now()->startOfYear()->addMonths(5)->format('Y-m'),
             'service_from' => 2018,
@@ -186,21 +186,21 @@ class Showcase extends Page implements HasSchemas
                     Section::make('Delivery window')
                         ->extraAttributes(['data-demo' => 'date-range'])
                         ->schema([
-                            DateRangePicker::make('window')
+                            DateRangePicker::make('delivery_dates')
                                 ->label('Deliver between')
-                                ->storeIn(start: 'window_starts_on', end: 'window_ends_on')
+                                ->storeIn(start: 'deliver_from', end: 'deliver_until')
                                 ->minDate(now()->startOfDay())
-                                ->helperText('Side by side, stored in two columns'),
+                                ->helperText('Expanded, stored in two columns'),
                         ]),
 
                     Section::make('Holiday closure')
-                        ->extraAttributes(['data-demo' => 'date-range-one-at-a-time'])
+                        ->extraAttributes(['data-demo' => 'date-range-compact'])
                         ->schema([
-                            DateRangePicker::make('closure')
+                            DateRangePicker::make('holiday')
                                 ->label('Depot closed')
                                 ->storeAsJson(start: 'from', end: 'to')
-                                ->oneAtATime()
-                                ->helperText('One at a time, stored as JSON'),
+                                ->compact()
+                                ->helperText('Compact, stored as JSON'),
                         ]),
 
                     Section::make('Contract term')
@@ -217,7 +217,7 @@ class Showcase extends Page implements HasSchemas
                             YearRangePicker::make('service')
                                 ->label('Served the route')
                                 ->storeIn(start: 'service_from', end: 'service_to')
-                                ->oneAtATime(),
+                                ->compact(),
                         ]),
 
                     Section::make('Driver shift')

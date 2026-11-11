@@ -60,6 +60,7 @@ return [
         'clear' => 'Clear',
         'required' => 'Pick a start and an end.',
         'incomplete' => 'Pick both ends of the range.',
+        'missing' => ':end is required.',
         'order' => ':end must not be before :start.',
         'min' => ':end must be no earlier than :bound.',
         'max' => ':end must be no later than :bound.',

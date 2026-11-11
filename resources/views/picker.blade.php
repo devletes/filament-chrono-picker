@@ -74,6 +74,7 @@
                     aria-modal="false"
                     @class(['fi-chrono-panel', 'fi-chrono-panel-with-date' => $hasDate])
                 >
+                    <div class="fi-chrono-panel-body">
                     @if ($config['hasCalendar'] && $hasTime)
                         <div class="fi-chrono-views" role="tablist">
                             <button
@@ -128,6 +129,7 @@
                                 </x-filament::button>
                             @endunless
                         </div>
+                    </div>
                     </div>
                 </div>
             @endunless

@@ -1,6 +1,6 @@
 <?php
 
-// Resolves devletes/filament-time-picker's Devletes\TimePicker classes to their replacements. Remove in 1.0.
+// Resolves devletes/filament-time-picker's Devletes\TimePicker classes to their replacements. Remove in the next major release.
 
 spl_autoload_register(static function (string $class): void {
     $legacy = 'Devletes\\TimePicker\\';

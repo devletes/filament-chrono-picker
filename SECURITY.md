@@ -2,13 +2,14 @@
 
 ## Supported Versions
 
-| Version | Supported          |
-|---------|--------------------|
-| 1.x     | :white_check_mark: |
+| Version        | Supported          |
+|----------------|--------------------|
+| Latest release | :white_check_mark: |
+| Older releases | :x:                |
 
 ## Reporting a Vulnerability
 
-Please report security vulnerabilities privately — do not open a public issue.
+Please report security vulnerabilities privately; do not open a public issue.
 
 - Use GitHub's [private vulnerability reporting](https://github.com/devletes/filament-chrono-picker/security/advisories/new)
 - Or email [packages@devletes.com](mailto:packages@devletes.com)

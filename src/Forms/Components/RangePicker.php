@@ -33,7 +33,7 @@ abstract class RangePicker extends Field
 
     protected string|Closure|null $endTarget = null;
 
-    protected RangeLayout|string|Closure $layout = RangeLayout::SideBySide;
+    protected RangeLayout|string|Closure $layout = RangeLayout::Expanded;
 
     protected string|Closure $rangeSeparator = ' – ';
 
@@ -41,10 +41,14 @@ abstract class RangePicker extends Field
 
     protected string|Closure|null $endLabel = null;
 
+    protected bool|Closure $isStartRequired = false;
+
+    protected bool|Closure $isEndRequired = false;
+
     /** @var array<int, array{0: string, 1: array<int, mixed>}> */
     protected array $endPickerCalls = [];
 
-    /** @var array<int, Closure> */
+    /** @var array<int, array{0: string|null, 1: Closure}> */
     protected array $endPickerModifiers = [];
 
     abstract protected function makeEndPicker(string $name): BaseDateTimePicker;
@@ -125,14 +129,14 @@ abstract class RangePicker extends Field
         return $this;
     }
 
-    public function sideBySide(): static
+    public function expanded(): static
     {
-        return $this->layout(RangeLayout::SideBySide);
+        return $this->layout(RangeLayout::Expanded);
     }
 
-    public function oneAtATime(): static
+    public function compact(): static
     {
-        return $this->layout(RangeLayout::OneAtATime);
+        return $this->layout(RangeLayout::Compact);
     }
 
     public function getLayout(): RangeLayout
@@ -176,6 +180,37 @@ abstract class RangePicker extends Field
     public function getEndLabel(): string
     {
         return $this->evaluate($this->endLabel) ?? __('devletes-chrono-picker::chrono-picker.range.end');
+    }
+
+    /** Requires the start and lets the end stay open; `required()` requires both. */
+    public function requireStart(bool|Closure $condition = true): static
+    {
+        $this->isStartRequired = $condition;
+
+        return $this;
+    }
+
+    /** Requires the end and lets the start stay open; `required()` requires both. */
+    public function requireEnd(bool|Closure $condition = true): static
+    {
+        $this->isEndRequired = $condition;
+
+        return $this;
+    }
+
+    public function isStartRequired(): bool
+    {
+        return $this->isRequired() || (bool) $this->evaluate($this->isStartRequired);
+    }
+
+    public function isEndRequired(): bool
+    {
+        return $this->isRequired() || (bool) $this->evaluate($this->isEndRequired);
+    }
+
+    public function isMarkedAsRequired(): bool
+    {
+        return $this->evaluate($this->isMarkedAsRequired) ?? ($this->isStartRequired() || $this->isEndRequired());
     }
 
     public function format(string|Closure|null $format): static
@@ -271,10 +306,26 @@ abstract class RangePicker extends Field
         return $this->forEachEnd('secondsStep', $step);
     }
 
-    /** Configures both end pickers: `fn (DatePicker $end, string $which) => ...`. */
+    /** Configures the start's picker: `fn (DatePicker $picker) => $picker->minDate(today())`. */
+    public function startPicker(Closure $callback): static
+    {
+        $this->endPickerModifiers[] = ['start', $callback];
+
+        return $this;
+    }
+
+    /** Configures the end's picker: `fn (DatePicker $picker) => $picker->maxDate(today()->addYear())`. */
+    public function endPicker(Closure $callback): static
+    {
+        $this->endPickerModifiers[] = ['end', $callback];
+
+        return $this;
+    }
+
+    /** Configures both ends' pickers: `fn (DatePicker $picker, string $which) => ...`. */
     public function configureEndsUsing(Closure $callback): static
     {
-        $this->endPickerModifiers[] = $callback;
+        $this->endPickerModifiers[] = [null, $callback];
 
         return $this;
     }
@@ -296,8 +347,10 @@ abstract class RangePicker extends Field
             $picker->{$method}(...$arguments);
         }
 
-        foreach ($this->endPickerModifiers as $modifier) {
-            $modifier($picker, $which);
+        foreach ($this->endPickerModifiers as [$for, $modifier]) {
+            if ($for === null || $for === $which) {
+                $modifier($picker, $which);
+            }
         }
 
         return $picker;
@@ -399,31 +452,44 @@ abstract class RangePicker extends Field
         $start = filled($value[$keys['start']] ?? null) ? (string) $value[$keys['start']] : null;
         $end = filled($value[$keys['end']] ?? null) ? (string) $value[$keys['end']] : null;
 
+        $startRequired = $this->isStartRequired();
+        $endRequired = $this->isEndRequired();
+
         if ($start === null && $end === null) {
-            if ($this->isRequired()) {
-                $fail(__('devletes-chrono-picker::chrono-picker.range.required'));
-            }
+            match (true) {
+                $startRequired && $endRequired => $fail(__('devletes-chrono-picker::chrono-picker.range.required')),
+                $startRequired => $fail(__('devletes-chrono-picker::chrono-picker.range.missing', ['end' => $this->getStartLabel()])),
+                $endRequired => $fail(__('devletes-chrono-picker::chrono-picker.range.missing', ['end' => $this->getEndLabel()])),
+                default => null,
+            };
 
             return;
         }
 
-        if ($start === null || $end === null) {
-            $fail(__('devletes-chrono-picker::chrono-picker.range.incomplete'));
+        // One end may be left open only when the other is the one required.
+        foreach (['start' => [$start, $endRequired && ! $startRequired], 'end' => [$end, $startRequired && ! $endRequired]] as $which => [$internal, $mayBeOpen]) {
+            if ($internal === null && ! $mayBeOpen) {
+                $label = $which === 'start' ? $this->getStartLabel() : $this->getEndLabel();
 
-            return;
+                $fail(($startRequired || $endRequired)
+                    ? __('devletes-chrono-picker::chrono-picker.range.missing', ['end' => $label])
+                    : __('devletes-chrono-picker::chrono-picker.range.incomplete'));
+
+                return;
+            }
         }
 
         // A time range compares the time of day only.
         $comparable = fn (string $internal): string => $this->getPickerMode() === PickerMode::Time ? substr($internal, -8) : $internal;
 
-        if ($comparable($end) < $comparable($start)) {
+        if ($start !== null && $end !== null && $comparable($end) < $comparable($start)) {
             $fail(__('devletes-chrono-picker::chrono-picker.range.order', [
                 'end' => $this->getEndLabel(),
                 'start' => $this->getStartLabel(),
             ]));
         }
 
-        foreach (['start' => $start, 'end' => $end] as $which => $internal) {
+        foreach (array_filter(['start' => $start, 'end' => $end]) as $which => $internal) {
             $picker = $this->getEndPicker($which);
             $label = $which === 'start' ? $this->getStartLabel() : $this->getEndLabel();
 

@@ -8,7 +8,7 @@ use Devletes\ChronoPicker\Forms\Components\DateTimePicker;
 use Devletes\ChronoPicker\Forms\Components\TimePicker;
 use Devletes\ChronoPicker\Tests\TestCase;
 
-/** The time picker shipped as devletes/filament-time-picker; its names keep working until Chrono Picker 1.0. */
+/** The time picker shipped as devletes/filament-time-picker; its names keep working until the next major release. */
 class LegacyNamesTest extends TestCase
 {
     public function test_the_1x_component_classes_resolve_to_the_new_ones(): void

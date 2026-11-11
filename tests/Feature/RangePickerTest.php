@@ -4,6 +4,7 @@ namespace Devletes\ChronoPicker\Tests\Feature;
 
 use Devletes\ChronoPicker\Enums\RangeLayout;
 use Devletes\ChronoPicker\Enums\RangeStorage;
+use Devletes\ChronoPicker\Forms\Components\DatePicker;
 use Devletes\ChronoPicker\Forms\Components\DateRangePicker;
 use Devletes\ChronoPicker\Forms\Components\MonthRangePicker;
 use Devletes\ChronoPicker\Forms\Components\TimeRangePicker;
@@ -247,6 +248,52 @@ class RangePickerTest extends TestCase
             ->assertHasNoErrors();
     }
 
+    public function test_a_required_start_leaves_the_end_open(): void
+    {
+        Livewire::test(RangePickerComponent::class)
+            ->set('startRequired', true)
+            ->set('data.dates', ['start' => '2026-02-10 00:00:00', 'end' => null])
+            ->call('save')
+            ->assertHasNoErrors()
+            ->assertSet('saved.starts_on', '2026-02-10')
+            ->assertSet('saved.ends_on', null);
+
+        Livewire::test(RangePickerComponent::class)
+            ->set('startRequired', true)
+            ->set('data.dates', ['start' => null, 'end' => '2026-02-10 00:00:00'])
+            ->call('save')
+            ->assertHasErrors(['data.dates' => 'From is required.']);
+
+        Livewire::test(RangePickerComponent::class)
+            ->set('startRequired', true)
+            ->call('save')
+            ->assertHasErrors(['data.dates' => 'From is required.']);
+    }
+
+    public function test_a_required_end_leaves_the_start_open(): void
+    {
+        Livewire::test(RangePickerComponent::class)
+            ->set('endRequired', true)
+            ->set('data.dates', ['start' => null, 'end' => '2026-02-10 00:00:00'])
+            ->call('save')
+            ->assertHasNoErrors()
+            ->assertSet('saved.starts_on', null)
+            ->assertSet('saved.ends_on', '2026-02-10');
+
+        Livewire::test(RangePickerComponent::class)
+            ->set('endRequired', true)
+            ->set('data.dates', ['start' => '2026-02-10 00:00:00', 'end' => null])
+            ->call('save')
+            ->assertHasErrors(['data.dates' => 'To is required.']);
+    }
+
+    public function test_requiring_one_end_marks_the_field_required(): void
+    {
+        $this->assertTrue($this->attach(DateRangePicker::make('p')->storeIn(start: 'a', end: 'b')->requireStart())->isMarkedAsRequired());
+        $this->assertTrue($this->attach(DateRangePicker::make('p')->storeIn(start: 'a', end: 'b')->requireEnd())->isMarkedAsRequired());
+        $this->assertFalse($this->attach(DateRangePicker::make('p')->storeIn(start: 'a', end: 'b'))->isMarkedAsRequired());
+    }
+
     // Configuration
 
     public function test_storage_must_be_chosen(): void
@@ -265,11 +312,11 @@ class RangePickerTest extends TestCase
         $this->assertSame(['start' => 'start', 'end' => 'end'], DateRangePicker::make('p')->storeIn('a', 'b')->getStateKeys());
     }
 
-    public function test_the_layout_defaults_to_side_by_side(): void
+    public function test_the_layout_defaults_to_expanded(): void
     {
-        $this->assertSame(RangeLayout::SideBySide, DateRangePicker::make('p')->getLayout());
-        $this->assertSame(RangeLayout::OneAtATime, DateRangePicker::make('p')->oneAtATime()->getLayout());
-        $this->assertSame(RangeLayout::OneAtATime, DateRangePicker::make('p')->layout('one-at-a-time')->getLayout());
+        $this->assertSame(RangeLayout::Expanded, DateRangePicker::make('p')->getLayout());
+        $this->assertSame(RangeLayout::Compact, DateRangePicker::make('p')->compact()->getLayout());
+        $this->assertSame(RangeLayout::Compact, DateRangePicker::make('p')->layout('compact')->getLayout());
     }
 
     public function test_each_end_is_the_matching_single_picker(): void
@@ -295,14 +342,44 @@ class RangePickerTest extends TestCase
         $this->assertSame('F Y', $range->getRangeConfig()['displayFormat']);
     }
 
+    public function test_one_end_can_be_configured_on_its_own(): void
+    {
+        $range = $this->attach(DateRangePicker::make('p')
+            ->storeIn(start: 'a', end: 'b')
+            ->startPicker(fn (DatePicker $picker) => $picker->minDate('2026-03-01'))
+            ->endPicker(fn (DatePicker $picker) => $picker->maxDate('2026-12-31')));
+
+        $this->assertSame('2026-03-01 00:00:00', $range->getEndConfig('start')['minDate']);
+        $this->assertNull($range->getEndConfig('start')['maxDate']);
+        $this->assertNull($range->getEndConfig('end')['minDate']);
+        $this->assertSame('2026-12-31 23:59:59', $range->getEndConfig('end')['maxDate']);
+
+        $failures = [];
+        $range->validateRange(['start' => '2026-02-20 00:00:00', 'end' => '2026-03-05 00:00:00'], function (string $message) use (&$failures): void {
+            $failures[] = $message;
+        });
+
+        $this->assertSame(['From must be no earlier than Mar 1, 2026.'], $failures);
+    }
+
+    public function test_both_ends_can_be_configured_from_one_closure(): void
+    {
+        $range = $this->attach(DateRangePicker::make('p')
+            ->storeIn(start: 'a', end: 'b')
+            ->configureEndsUsing(fn (DatePicker $picker, string $which) => $picker->displayFormat($which === 'start' ? 'j M' : 'j M Y')));
+
+        $this->assertSame('j M', $range->getEndConfig('start')['displayFormat']);
+        $this->assertSame('j M Y', $range->getEndConfig('end')['displayFormat']);
+    }
+
     public function test_it_renders_both_ends_and_loads_on_request(): void
     {
         Livewire::test(RangePickerComponent::class, ['state' => ['starts_on' => '2026-01-01', 'ends_on' => '2026-01-20']])
             ->assertSee('fi-chrono-range-field', escape: false)
             ->assertSee('data-chrono-end="start"', escape: false)
             ->assertSee('data-chrono-end="end"', escape: false)
-            ->assertSee('fi-chrono-range-side-by-side', escape: false)
-            ->assertSee('fi-chrono-range-one-at-a-time', escape: false)
+            ->assertSee('fi-chrono-range-expanded', escape: false)
+            ->assertSee('fi-chrono-range-compact', escape: false)
             ->assertSee('x-load-src', escape: false);
     }
 

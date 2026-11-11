@@ -257,7 +257,7 @@ const rangePicker = ({ config, state }) => {
                 ends.end?.syncFromState()
                 this.rangeCommit()
 
-                if (config.layout === 'one-at-a-time') {
+                if (config.layout === 'compact') {
                     this.rangeActive = 'end'
                 }
 

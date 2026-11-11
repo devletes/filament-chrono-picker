@@ -145,7 +145,7 @@ trait InteractsWithChronoPanel
     }
 
     /**
-     * @deprecated Use getPickerConfig(). Remove in 1.0.
+     * @deprecated Use getPickerConfig(). Remove in the next major release.
      *
      * @return array<string, mixed>
      */

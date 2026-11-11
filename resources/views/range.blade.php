@@ -5,7 +5,7 @@
     $id = $getId();
     $isDisabled = $config['isDisabled'];
     $isReadOnly = $isReadOnly();
-    $isOneAtATime = $config['layout'] === 'one-at-a-time';
+    $isCompact = $config['layout'] === 'compact';
     $hasTime = $config['mode'] === 'time';
     $ends = ['start' => $getEndConfig('start'), 'end' => $getEndConfig('end')];
     $face = $hasTime ? $getEndClockFace() : [];
@@ -77,11 +77,12 @@
                         'fi-chrono-panel',
                         'fi-chrono-panel-with-date' => ! $hasTime,
                         'fi-chrono-range-panel',
-                        'fi-chrono-range-one-at-a-time' => $isOneAtATime,
-                        'fi-chrono-range-side-by-side' => ! $isOneAtATime,
+                        'fi-chrono-range-compact' => $isCompact,
+                        'fi-chrono-range-expanded' => ! $isCompact,
                     ])
                 >
-                    @if ($isOneAtATime)
+                    <div class="fi-chrono-panel-body">
+                    @if ($isCompact)
                         <div class="fi-chrono-views" role="tablist">
                             @foreach (['start', 'end'] as $which)
                                 <button
@@ -101,10 +102,10 @@
                     <div class="fi-chrono-range-ends">
                         @foreach ($ends as $which => $endConfig)
                             <div
-                                @if ($isOneAtATime) x-show="rangeActive === '{{ $which }}'" @endif
+                                @if ($isCompact) x-show="rangeActive === '{{ $which }}'" @endif
                                 class="fi-chrono-range-end"
                             >
-                                @unless ($isOneAtATime)
+                                @unless ($isCompact)
                                     <div class="fi-chrono-range-end-heading">{{ $config['labels'][$which] }}</div>
                                 @endunless
 
@@ -139,6 +140,7 @@
                                 </x-filament::button>
                             @endunless
                         </div>
+                    </div>
                     </div>
                 </div>
             @endunless

@@ -4,7 +4,7 @@ namespace Devletes\ChronoPicker\Enums;
 
 enum RangeLayout: string
 {
-    case SideBySide = 'side-by-side';
+    case Expanded = 'expanded';
 
-    case OneAtATime = 'one-at-a-time';
+    case Compact = 'compact';
 }

@@ -2,6 +2,23 @@
 
 All notable changes to `devletes/filament-chrono-picker` (formerly `devletes/filament-time-picker`) will be documented in this file.
 
+## [1.0.0] - 2026-11-11
+
+First stable release. The time picker's old class names and config file keep working until 2.0.
+
+### Added
+
+- `requireStart()` and `requireEnd()` on the range pickers: one end required, the other allowed to stay open. `required()` still requires both.
+- `startPicker()` and `endPicker()` on the range pickers, to configure one end's single picker; `configureEndsUsing()` still does both.
+
+### Changed
+
+- The range layouts are `expanded()` (the default) and `compact()`, `RangeLayout::Expanded` / `Compact`; they were `sideBySide()` and `oneAtATime()`.
+
+### Fixed
+
+- The panel's sections had lost their spacing since 0.1.1: the Date / Time switch sat on the readout and the footer on the grid.
+
 ## [0.1.2] - 2026-11-10
 
 ### Changed

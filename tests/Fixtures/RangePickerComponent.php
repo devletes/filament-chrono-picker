@@ -32,6 +32,10 @@ class RangePickerComponent extends Component implements HasActions, HasSchemas
 
     public bool $required = false;
 
+    public bool $startRequired = false;
+
+    public bool $endRequired = false;
+
     public bool $withRepeater = false;
 
     /** @var array<string, mixed>|null */
@@ -66,11 +70,13 @@ class RangePickerComponent extends Component implements HasActions, HasSchemas
                 DateRangePicker::make('dates')
                     ->storeIn(start: 'starts_on', end: 'ends_on')
                     ->required(fn (): bool => $this->required)
+                    ->requireStart(fn (): bool => $this->startRequired)
+                    ->requireEnd(fn (): bool => $this->endRequired)
                     ->minDate(fn (): ?string => $this->minDate)
                     ->maxDate(fn (): ?string => $this->maxDate),
                 DateRangePicker::make('stay')
                     ->storeAsJson(start: 'from', end: 'to')
-                    ->oneAtATime(),
+                    ->compact(),
                 MonthRangePicker::make('billing')
                     ->storeAsJson(start: 'from', end: 'to'),
                 YearRangePicker::make('fiscal')
