@@ -2,6 +2,12 @@
 
 All notable changes to `devletes/filament-chrono-picker` (formerly `devletes/filament-time-picker`) will be documented in this file.
 
+## [1.1.0] - 2026-11-13
+
+### Added
+
+- `RangeEntry`: an infolist entry that reads a range from the columns or JSON keys its picker writes (`fromColumns()` / `fromJson()`) and shows it on one line, with `displayFormat()` and `rangeSeparator()`.
+
 ## [1.0.0] - 2026-11-11
 
 First stable release. The time picker's old class names and config file keep working until 2.0.

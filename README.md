@@ -417,6 +417,28 @@ DateRangePicker::make('booking')
 
 Whatever you set there applies in the panel and in the server-side validation alike. `configureEndsUsing(fn (DatePicker $picker, string $which) => ...)` configures both from one closure.
 
+### Showing a range in an infolist
+
+`RangeEntry` reads a range from wherever its picker stored it and shows it on one line. Point it at the same columns (or JSON keys) the picker writes, then the format and, if you like, the separator:
+
+```php
+use Devletes\ChronoPicker\Infolists\Components\RangeEntry;
+
+RangeEntry::make('booking')
+    ->fromColumns(start: 'check_in', end: 'check_out');     // Jan 1, 2026 – Jan 20, 2026
+
+RangeEntry::make('vacation')
+    ->fromJson(start: 'from', end: 'to')
+    ->displayFormat('M j');                             // Dec 24 – Jan 2
+
+RangeEntry::make('contract')
+    ->fromColumns(start: 'contract_starts', end: 'contract_ends')
+    ->displayFormat('M Y')
+    ->rangeSeparator(' to ');                           // Jan 2026 to Jun 2026
+```
+
+`displayFormat()` takes a PHP date format (`M Y` for months, `Y` for years, `g:i A` for times) and defaults to the panel's date format. An open end keeps the separator ("Jan 2026 –"), and an empty range shows the entry's `placeholder()`. It is a `TextEntry`, so everything else a text entry offers (labels, icons, colours, `badge()`) works as usual.
+
 ## Typing and the keyboard
 
 The big digits in the panel are inputs. Click one and type; it moves to the minute on its own when the hour cannot be extended. The arrow keys nudge by the field's own step, Escape closes the panel, and Backspace on the closed field clears it.
@@ -529,6 +551,15 @@ The range classes (`DateRangePicker`, `MonthRangePicker`, `YearRangePicker`, `Ti
 | `configureEndsUsing(fn ($picker, $which) => ...)` | Configures both ends' pickers from one closure |
 | `closeOnComplete()`, `okLabel()`, `cancelLabel()` | As on the single pickers |
 | The single pickers' bounds, formats and steps | Passed on to both ends (see Ranges → Options) |
+
+`RangeEntry` is a Filament `TextEntry` with:
+
+| Method | What it does |
+| --- | --- |
+| `fromColumns(start: 'a', end: 'b')` | Reads the ends from two attributes |
+| `fromJson(start: 'from', end: 'to')` | Reads the ends from one array under the entry's name, with these keys |
+| `displayFormat($format)` | How each end is written, as a PHP date format (default: the panel's date format) |
+| `rangeSeparator($separator)` | The text between the ends (default ` – `) |
 
 ## Testing
 
